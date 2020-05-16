@@ -1,6 +1,6 @@
 # Basic CMake project
 cmake_minimum_required(VERSION 3.5.1)
-
+    
 #Change to RELEASE when the project is done
 set(CMAKE_BUILD_TYPE DEBUG)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

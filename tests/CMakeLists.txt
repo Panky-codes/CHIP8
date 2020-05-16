@@ -1,13 +1,12 @@
+include_directories(${CMAKE_SOURCE_DIR}/include)
 
-add_executable(chip8 tests-vector.cpp)
-target_link_libraries(chip8 PUBLIC CONAN_PKG::catch2)
-add_test(test_chip8 chip8)
+add_executable(test_chip8_bin tests-chip8.cpp)
+target_link_libraries(test_chip8_bin PUBLIC chip8 CONAN_PKG::catch2 CONAN_PKG::fmt CONAN_PKG::spdlog )
+target_compile_options(test_chip8_bin PUBLIC -Werror -Wall -Wextra -pedantic-errors -Wconversion -Wsign-conversion)
+add_test(test_chip8 ${CMAKE_BINARY_DIR}/bin/test_chip8_bin)
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-target_include_directories(chip8 PUBLIC ${CONAN_INCLUDE_DIRS})
-target_include_directories(chip8 PUBLIC ${CMAKE_BINARY_DIR}/include)
-set_target_properties(chip8 PROPERTIES
+
+set_target_properties(test_chip8_bin PROPERTIES
     CXX_STANDARD 17
     CXX_EXTENSIONS OFF
-    COMPILE_FLAGS "-Wall -g -Wextra -Wpedantic -Werror"
 )

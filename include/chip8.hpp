@@ -1,12 +1,14 @@
 #ifndef CHIP_8_H_
 #define CHIP_8_H_
 
+#include <spdlog/common.h>
+
 #include <array>
 #include <cstdint>
-#include <spdlog/common.h>
 #include <vector>
-#include "spdlog/spdlog.h"
+
 #include "spdlog/sinks/stdout_color_sinks.h"
+#include "spdlog/spdlog.h"
 
 class chip8 {
    public:
@@ -14,6 +16,7 @@ class chip8 {
     void set_debug_level(spdlog::level::level_enum debug_level);
     void reset();
     void step_one_cycle();
+    std::array<uint8_t, 16> get_Vx_registers() const;
 
    private:
     std::array<uint8_t, 4096> memory{0};
