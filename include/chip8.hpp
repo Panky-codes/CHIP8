@@ -1,22 +1,17 @@
 #ifndef CHIP_8_H_
 #define CHIP_8_H_
 
-#include <spdlog/common.h>
-
-#include <array>
 #include <cstdint>
+#include <array>
 #include <vector>
-
-#include "spdlog/sinks/stdout_color_sinks.h"
-#include "spdlog/spdlog.h"
 
 class chip8 {
    public:
     void load_memory(std::vector<uint8_t> rom_opcodes);
-    void set_debug_level(spdlog::level::level_enum debug_level);
     void reset();
     void step_one_cycle();
     std::array<uint8_t, 16> get_Vx_registers() const;
+    uint16_t get_prog_counter() const;
 
    private:
     std::array<uint8_t, 4096> memory{0};
@@ -29,7 +24,6 @@ class chip8 {
     uint16_t prog_counter{prog_mem_begin};
     uint8_t delay_timer{0};
     uint8_t sound_timer{0};
-    std::shared_ptr<spdlog::logger> logger = spdlog::stdout_color_mt("console");
 };
 
 #endif
