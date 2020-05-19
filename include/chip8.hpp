@@ -10,12 +10,12 @@ class chip8 {
     void load_memory(std::vector<uint8_t> rom_opcodes);
     void reset();
     void step_one_cycle();
-    std::array<uint8_t, 16> get_Vx_registers() const;
+    std::array<uint8_t, 16> get_V_registers() const;
     uint16_t get_prog_counter() const;
 
    private:
     std::array<uint8_t, 4096> memory{0};
-    std::array<uint8_t, 16> Vx{0};
+    std::array<uint8_t, 16> V{0};
     std::array<uint8_t, 16> stack{0};
     std::array<uint8_t, (64 * 32)> graphics{0};
     uint8_t stack_pointer{0};

@@ -39,7 +39,7 @@ void chip8::load_memory(std::vector<uint8_t> rom_opcodes) {
                 memory.begin() + prog_mem_begin);
 }
 
-std::array<uint8_t, 16> chip8::get_Vx_registers() const { return Vx; }
+std::array<uint8_t, 16> chip8::get_V_registers() const { return V; }
 
 uint16_t chip8::get_prog_counter() const { return prog_counter; }
 
@@ -53,7 +53,7 @@ void chip8::step_one_cycle() {
         case (0x6000): {
             const uint8_t reg =
                 static_cast<uint8_t>(second_nibble(opcode) >> 8);
-            Vx[reg] = last_two_nibbles(opcode);
+            V[reg] = last_two_nibbles(opcode);
             break;
         }
         case (0x8000): {
@@ -63,7 +63,7 @@ void chip8::step_one_cycle() {
                     static_cast<uint8_t>(third_nibble(opcode) >> 4);
                 const uint8_t dest_reg =
                     static_cast<uint8_t>(second_nibble(opcode) >> 8);
-                Vx[dest_reg] = Vx[source_reg];
+                V[dest_reg] = V[source_reg];
             }
             // OPCODE 8XY4 : Add the value of register VY to register VX
             // Set VF to 01 if a carry occurs else to 0
@@ -73,10 +73,10 @@ void chip8::step_one_cycle() {
                     static_cast<uint8_t>(third_nibble(opcode) >> 4);
                 const uint8_t dest_reg =
                     static_cast<uint8_t>(second_nibble(opcode) >> 8);
-                const uint16_t sum = static_cast<uint16_t>(Vx[source_reg] + Vx[dest_reg]);
+                const uint16_t sum = static_cast<uint16_t>(V[source_reg] + V[dest_reg]);
                 //mask the sum with 0b100000000 (0x100) to get the overflow bit
-                Vx[0xF] = static_cast<uint8_t>((sum & 0x100) >> 8);
-                Vx[dest_reg] = static_cast<uint8_t>(sum);
+                V[0xF] = static_cast<uint8_t>((sum & 0x100) >> 8);
+                V[dest_reg] = static_cast<uint8_t>(sum);
             }
             break;
         }
@@ -87,8 +87,8 @@ void chip8::step_one_cycle() {
             // static_cast replicates the actual CHIP8 adder where if a 8bit
             // overflow happens the addition resets to 0 once the value crosses
             // 255
-            Vx[reg] =
-                static_cast<uint8_t>((last_two_nibbles(opcode) + Vx[reg]));
+            V[reg] =
+                static_cast<uint8_t>((last_two_nibbles(opcode) + V[reg]));
             break;
         }
     }
