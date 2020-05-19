@@ -51,44 +51,44 @@ void chip8::step_one_cycle() {
     switch (first_nibble(opcode)) {
         // OPCODE 6XNN: Store number NN in register VX
         case (0x6000): {
-            const uint8_t reg =
+            const uint8_t Vx =
                 static_cast<uint8_t>(second_nibble(opcode) >> 8);
-            V[reg] = last_two_nibbles(opcode);
+            V[Vx] = last_two_nibbles(opcode);
             break;
         }
         case (0x8000): {
             // OPCODE 8XY0 : Store the value of register VY in register VX
             if (last_nibble(opcode) == 0) {
-                const uint8_t source_reg =
+                const uint8_t Vy =
                     static_cast<uint8_t>(third_nibble(opcode) >> 4);
-                const uint8_t dest_reg =
+                const uint8_t Vx =
                     static_cast<uint8_t>(second_nibble(opcode) >> 8);
-                V[dest_reg] = V[source_reg];
+                V[Vx] = V[Vy];
             }
             // OPCODE 8XY4 : Add the value of register VY to register VX
             // Set VF to 01 if a carry occurs else to 0
             else if(last_nibble(opcode) == 4) 
             {
-                const uint8_t source_reg =
+                const uint8_t Vy =
                     static_cast<uint8_t>(third_nibble(opcode) >> 4);
-                const uint8_t dest_reg =
+                const uint8_t Vx =
                     static_cast<uint8_t>(second_nibble(opcode) >> 8);
-                const uint16_t sum = static_cast<uint16_t>(V[source_reg] + V[dest_reg]);
+                const uint16_t sum = static_cast<uint16_t>(V[Vy] + V[Vx]);
                 //mask the sum with 0b100000000 (0x100) to get the overflow bit
                 V[0xF] = static_cast<uint8_t>((sum & 0x100) >> 8);
-                V[dest_reg] = static_cast<uint8_t>(sum);
+                V[Vx] = static_cast<uint8_t>(sum);
             }
             break;
         }
         // OPCODE 7XNN : Add NN to register VX
         case (0x7000): {
-            const uint8_t reg =
+            const uint8_t Vx =
                 static_cast<uint8_t>(second_nibble(opcode) >> 8);
             // static_cast replicates the actual CHIP8 adder where if a 8bit
             // overflow happens the addition resets to 0 once the value crosses
             // 255
-            V[reg] =
-                static_cast<uint8_t>((last_two_nibbles(opcode) + V[reg]));
+            V[Vx] =
+                static_cast<uint8_t>((last_two_nibbles(opcode) + V[Vx]));
             break;
         }
     }
