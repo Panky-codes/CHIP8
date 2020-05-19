@@ -30,5 +30,53 @@ TEST_CASE("Opcode verification") {
         REQUIRE(actual_Vx[3] == 0x32);
         REQUIRE(actual_Vx[1] == 0x32);
     }
+    SECTION("7XNN") {
+        //71 33 -> Add the value NN to register V1
+        std::vector<uint8_t> rom{0x63, 0x32, 0x73, 0x30};
+
+        emulator.load_memory(rom);
+        emulator.step_one_cycle();
+        emulator.step_one_cycle();
+        auto actual_Vx = emulator.get_Vx_registers();
+
+        REQUIRE(actual_Vx[3] == (0x32 + 0x30));
+    }
+    SECTION("7XNN 8bit overflow") {
+        //71 33 -> Add the value NN to register V1
+        std::vector<uint8_t> rom{0x63, 0x32, 0x73, 0xF0};
+
+        emulator.load_memory(rom);
+        emulator.step_one_cycle();
+        emulator.step_one_cycle();
+        auto actual_Vx = emulator.get_Vx_registers();
+
+        REQUIRE(actual_Vx[3] == (0x22));
+    }
+    SECTION("8XY4") {
+        //81 34 -> Add the value V3 to register V1 and set VF if it overflows
+        std::vector<uint8_t> rom{0x61, 0x32, 0x63, 0x36, 0x81, 0x34};
+
+        emulator.load_memory(rom);
+        emulator.step_one_cycle();
+        emulator.step_one_cycle();
+        emulator.step_one_cycle();
+        auto actual_Vx = emulator.get_Vx_registers();
+
+        REQUIRE(actual_Vx[1] == (0x32 + 0x36));
+        REQUIRE(actual_Vx[0xF] == 0);
+    }
+    SECTION("8XY4 8bit overflow and VF should be 1") {
+        //81 34 -> Add the value V3 to register V1 and set VF to 1 as it overflows
+        std::vector<uint8_t> rom{0x61, 0x32, 0x63, 0xF1, 0x81, 0x34};
+
+        emulator.load_memory(rom);
+        emulator.step_one_cycle();
+        emulator.step_one_cycle();
+        emulator.step_one_cycle();
+        auto actual_Vx = emulator.get_Vx_registers();
+
+        REQUIRE(actual_Vx[1] == 0x23);
+        REQUIRE(actual_Vx[0xF] == 1);
+    }
 }
 
