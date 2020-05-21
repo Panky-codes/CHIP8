@@ -1,10 +1,20 @@
 # Basic CMake project
 cmake_minimum_required(VERSION 3.5.1)
+project(CHIP8)
     
 #Change to RELEASE when the project is done
 set(CMAKE_BUILD_TYPE DEBUG)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-project(CHIP8)
+
+#Add all the project options necessary for targets
+add_library(project_options INTERFACE)
+
+target_compile_features(project_options INTERFACE cxx_std_17)
+
+add_library(project_warnings INTERFACE)
+# standard compiler warnings
+include(cmake/CompilerWarnings.cmake)
+set_project_warnings(project_warnings)
 
 # Set up some extra Conan dependencies based on our needs
 # before loading Conan
