@@ -34,6 +34,13 @@ static constexpr inline uint8_t last_two_nibbles(
     return (opcode & 0x00FFU);
 }
 
+// Mask function to get the last two nibbles 0x00NN
+// example: input is 0x6133, output will be 0x0100
+static constexpr inline std::pair<uint8_t,uint8_t> get_XY_nibbles(
+    const uint16_t opcode) noexcept {
+    return  {(second_nibble(opcode) >> 8),(third_nibble(opcode) >> 4) };
+}
+
 void chip8::load_memory(std::vector<uint8_t> rom_opcodes) {
     std::copy_n(rom_opcodes.begin(), rom_opcodes.size(),
                 memory.begin() + prog_mem_begin);
@@ -59,24 +66,66 @@ void chip8::step_one_cycle() {
         case (0x8000): {
             // OPCODE 8XY0 : Store the value of register VY in register VX
             if (last_nibble(opcode) == 0) {
-                const uint8_t Vy =
-                    static_cast<uint8_t>(third_nibble(opcode) >> 4);
-                const uint8_t Vx =
-                    static_cast<uint8_t>(second_nibble(opcode) >> 8);
+                const auto [Vx, Vy] = get_XY_nibbles(opcode);
                 V[Vx] = V[Vy];
             }
             // OPCODE 8XY4 : Add the value of register VY to register VX
             // Set VF to 01 if a carry occurs else to 0
             else if(last_nibble(opcode) == 4) 
             {
-                const uint8_t Vy =
-                    static_cast<uint8_t>(third_nibble(opcode) >> 4);
-                const uint8_t Vx =
-                    static_cast<uint8_t>(second_nibble(opcode) >> 8);
+                const auto [Vx, Vy] = get_XY_nibbles(opcode);
                 const uint16_t sum = static_cast<uint16_t>(V[Vy] + V[Vx]);
                 //mask the sum with 0b100000000 (0x100) to get the overflow bit
                 V[0xF] = static_cast<uint8_t>((sum & 0x100) >> 8);
                 V[Vx] = static_cast<uint8_t>(sum);
+            }
+            // OPCODE 8XY5 : Subtract the value of register VY from register VX 
+            // Set VF to 01 if a borrow does not occur, else to 0
+            else if(last_nibble(opcode) == 5) 
+            {
+                const auto [Vx, Vy] = get_XY_nibbles(opcode);
+                if (V[Vx] > V[Vy])
+                {
+                    V[0xF] = 1;
+                }
+                else
+                {
+                    V[0xF] = 0;
+                }
+                V[Vx] = static_cast<uint8_t>(V[Vx] - V[Vy]);
+            }
+            // OPCODE 8XY7 : Set register VX to the value of VY minus VX
+            // Set VF to 01 if a borrow does not occur, else to 0
+            else if(last_nibble(opcode) == 7) 
+            {
+                const auto [Vx, Vy] = get_XY_nibbles(opcode);
+                if (V[Vy] > V[Vx])
+                {
+                    V[0xF] = 1;
+                }
+                else
+                {
+                    V[0xF] = 0;
+                }
+                V[Vx] = static_cast<uint8_t>(V[Vy] - V[Vx]);
+            }
+            // OPCODE 8XY2 : Set VX to VX AND VY 
+            else if(last_nibble(opcode) == 2) 
+            {
+                const auto [Vx, Vy] = get_XY_nibbles(opcode);
+                V[Vx] = V[Vx] & V[Vy];
+            }
+            // OPCODE 8XY1 : Set VX to VX OR VY 
+            else if(last_nibble(opcode) == 1) 
+            {
+                const auto [Vx, Vy] = get_XY_nibbles(opcode);
+                V[Vx] = V[Vx] | V[Vy];
+            }
+            // OPCODE 8XY3 : Set VX to VX XOR VY 
+            else if(last_nibble(opcode) == 3) 
+            {
+                const auto [Vx, Vy] = get_XY_nibbles(opcode);
+                V[Vx] = V[Vx] ^ V[Vy];
             }
             break;
         }
