@@ -164,5 +164,70 @@ TEST_CASE("Opcode verification") {
 
         REQUIRE(actual_V[9] == (0x32 ^ 0x86));
     }
+    SECTION("8XY6 SHIFT RIGHT WITH LSB 0") {
+        // 89 53 -> V9 = V5 >> 1 and V[F] = 0
+        std::vector<uint8_t> rom{0x69, 0x32, 0x65, 0x86, 0x89, 0x56};
+
+        emulator.load_memory(rom);
+        emulator.step_one_cycle();
+        emulator.step_one_cycle();
+        emulator.step_one_cycle();
+        auto actual_V = emulator.get_V_registers();
+
+        REQUIRE(actual_V[5] ==static_cast<uint8_t>(0x86 >> 1));
+        REQUIRE(actual_V[9] == static_cast<uint8_t>(0x86 >> 1));
+        REQUIRE(actual_V[0xF] == 0);
+    }
+    SECTION("8XY6 SHIFT RIGHT WITH LSB 1") {
+        // 89 53 -> V9 = V5 >> 1 and V[F] = 1
+        std::vector<uint8_t> rom{0x69, 0x32, 0x65, 0x85, 0x89, 0x56};
+
+        emulator.load_memory(rom);
+        emulator.step_one_cycle();
+        emulator.step_one_cycle();
+        emulator.step_one_cycle();
+        auto actual_V = emulator.get_V_registers();
+
+        REQUIRE(actual_V[5] ==static_cast<uint8_t>(0x85 >> 1));
+        REQUIRE(actual_V[9] ==static_cast<uint8_t>(0x85 >> 1));
+        REQUIRE(actual_V[0xF] == 1);
+    }
+    SECTION("8XYE SHIFT LEFT WITH MSB 0") {
+        // 89 53 -> V9 = V5 << 1 and V[F] = 0
+        std::vector<uint8_t> rom{0x69, 0x32, 0x65, 0x76, 0x89, 0x5E};
+
+        emulator.load_memory(rom);
+        emulator.step_one_cycle();
+        emulator.step_one_cycle();
+        emulator.step_one_cycle();
+        auto actual_V = emulator.get_V_registers();
+
+        REQUIRE(actual_V[5] == static_cast<uint8_t>(0x76 << 1));
+        REQUIRE(actual_V[9] == static_cast<uint8_t>(0x76 << 1));
+        REQUIRE(actual_V[0xF] == 0);
+    }
+    SECTION("8XYE SHIFT LEFT WITH MSB 1") {
+        // 89 53 -> V9 = V5 << 1 and V[F] = 0
+        std::vector<uint8_t> rom{0x69, 0x32, 0x65, 0x86, 0x89, 0x5E};
+
+        emulator.load_memory(rom);
+        emulator.step_one_cycle();
+        emulator.step_one_cycle();
+        emulator.step_one_cycle();
+        auto actual_V = emulator.get_V_registers();
+
+        REQUIRE(actual_V[5] == static_cast<uint8_t>(0x86 << 1));
+        REQUIRE(actual_V[9] == static_cast<uint8_t>(0x86 << 1));
+        REQUIRE(actual_V[0xF] == 1);
+    }
+    SECTION("CXNN Random number generator") {
+        std::vector<uint8_t> rom{0xC7, 0xDD};
+
+        emulator.load_memory(rom);
+        emulator.step_one_cycle();
+        auto actual_V = emulator.get_V_registers();
+
+        REQUIRE(actual_V[5] < 0xDD);
+    }
 }
 
