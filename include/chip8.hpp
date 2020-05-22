@@ -1,8 +1,9 @@
 #ifndef CHIP_8_H_
 #define CHIP_8_H_
 
-#include <cstdint>
 #include <array>
+#include <cstdint>
+#include <stack>
 #include <vector>
 
 class chip8 {
@@ -12,11 +13,13 @@ class chip8 {
     void step_one_cycle();
     std::array<uint8_t, 16> get_V_registers() const;
     uint16_t get_prog_counter() const;
+    std::stack<uint16_t> get_stack() const;
 
    private:
     std::array<uint8_t, 4096> memory{0};
     std::array<uint8_t, 16> V{0};
-    std::array<uint8_t, 16> stack{0};
+    /* std::array<uint8_t, 16> stack{0}; */
+    std::stack<uint16_t> hw_stack;
     std::array<uint8_t, (64 * 32)> graphics{0};
     uint8_t stack_pointer{0};
     uint16_t I{0};

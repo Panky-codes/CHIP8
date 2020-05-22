@@ -17,8 +17,6 @@ function(set_project_warnings project_name)
       -Wpedantic # warn if non-standard C++ is used
       -Wconversion # warn on type conversions that may lose data
       -Wsign-conversion # warn on sign conversions
-      -Wduplicated-cond # Warn about duplicated condition in if-else-if chains
-      -Wduplicated-branches # warns for conditional operators having identical 
                             # second and third expressions 
       -Wnull-dereference # warn if a null dereference is detected
       -Wdouble-promotion # warn if float is implicit promoted to double
@@ -32,13 +30,13 @@ function(set_project_warnings project_name)
 
   set(GCC_WARNINGS
       ${CLANG_WARNINGS}
-      -Wmisleading-indentation # warn if indentation implies blocks where blocks
-                               # do not exist
-      -Wduplicated-cond # warn if if / else chain has duplicated conditions
-      -Wduplicated-branches # warn if if / else branches have duplicated code
-      -Wlogical-op # warn about logical operations being used where bitwise were
+      #      -Wmisleading-indentation # warn if indentation implies blocks where blocks
+      #                               # do not exist
+      #      -Wduplicated-cond # warn if if / else chain has duplicated conditions
+      #      -Wduplicated-branches # warn if if / else branches have duplicated code
+      #      -Wlogical-op # warn about logical operations being used where bitwise were
                    # probably wanted
-      -Wuseless-cast # warn if you perform a cast to the same type
+                   #      -Wuseless-cast # warn if you perform a cast to the same type
   )
 
   if(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang")
