@@ -71,11 +71,13 @@ void chip8::load_memory(std::vector<uint8_t> rom_opcodes) {
 }
 
 std::array<uint8_t, 16> chip8::get_V_registers() const { return V; }
+std::array<uint8_t, 16> chip8::get_Keys_array() const { return Keys; }
 std::stack<uint16_t> chip8::get_stack() const { return hw_stack; }
 
 uint16_t chip8::get_prog_counter() const { return prog_counter; }
 uint8_t chip8::get_delay_counter() const { return delay_timer; }
 uint8_t chip8::get_sound_counter() const { return sound_timer; }
+uint16_t chip8::get_I_register() const { return I; }
 
 void chip8::step_one_cycle() {
   // The memory is read in big endian, i.e., MSB first
@@ -282,9 +284,19 @@ void chip8::step_one_cycle() {
     else if (last_two_nibbles(opcode) == 0x18) {
       const auto Vx = static_cast<uint8_t>(second_nibble(opcode) >> 8);
       sound_timer = V[Vx];
+    }
+    // OPCODE FX1E: Add the value stored in register VX to register I
+    else if (last_two_nibbles(opcode) == 0x1E) {
+      const auto Vx = static_cast<uint8_t>(second_nibble(opcode) >> 8);
+      I = static_cast<uint16_t>(I + V[Vx]);
     } else {
       fmt::print("Unrecognized opcode: {0:#x} \n", opcode);
     }
+    break;
+  }
+  // OPCODE ANNN: Store memory address NNN in register I
+  case (0xA000): {
+    I = last_three_nibbles(opcode);
     break;
   }
   }

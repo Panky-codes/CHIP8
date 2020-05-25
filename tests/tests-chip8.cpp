@@ -402,4 +402,22 @@ TEST_CASE("Opcode verification") {
 
     REQUIRE(emulator.get_sound_counter() == 0x32);
   }
+  SECTION("ANNN STA NNN in I register") {
+    std::vector<uint8_t> rom{0xAC, 0x32};
+
+    emulator.load_memory(rom);
+    emulator.step_one_cycle();
+
+    REQUIRE(emulator.get_I_register() == 0x0C32);
+  }
+  SECTION("FX1E ADD Vx to I register") {
+    std::vector<uint8_t> rom{0x6C, 0x02,0xAC, 0x32, 0xFC, 0x1E};
+
+    emulator.load_memory(rom);
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+
+    REQUIRE(emulator.get_I_register() == 0x0C34);
+  }
 }
