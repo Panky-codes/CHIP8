@@ -373,4 +373,33 @@ TEST_CASE("Opcode verification") {
 
     REQUIRE(actual_V[8] == 0x82);
   }
+  SECTION("FX15 LDA Delay time") {
+    std::vector<uint8_t> rom{0x68, 0x32, 0xF8, 0x15};
+
+    emulator.load_memory(rom);
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+
+    REQUIRE(emulator.get_delay_counter() == 0x32);
+  }
+  SECTION("FX07 LDA Delay time in Vx") {
+    std::vector<uint8_t> rom{0x68, 0x32, 0xF8, 0x15, 0xF8, 0x07};
+
+    emulator.load_memory(rom);
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    auto actual_V = emulator.get_V_registers();
+
+    REQUIRE(actual_V[8] == 0x31);
+  }
+  SECTION("FX18 LDA Sound timer") {
+    std::vector<uint8_t> rom{0x6C, 0x32, 0xFC, 0x18};
+
+    emulator.load_memory(rom);
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+
+    REQUIRE(emulator.get_sound_counter() == 0x32);
+  }
 }

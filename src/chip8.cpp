@@ -1,8 +1,6 @@
 #include "chip8.hpp"
-
-#include <random>
-
 #include "fmt/format.h"
+#include <random>
 
 // Mask function to get the first Nibble 0xN000
 // example: input is 0x6133, output will be 0x6000
@@ -45,6 +43,28 @@ get_XY_nibbles(const uint16_t opcode) noexcept {
   return {(second_nibble(opcode) >> 8), (third_nibble(opcode) >> 4)};
 }
 
+static constexpr std::array<uint8_t, 80> chip8_fonts = {
+    0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+    0x20, 0x60, 0x20, 0x20, 0x70, // 1
+    0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+    0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+    0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+    0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+    0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+    0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+    0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+    0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+    0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+    0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+    0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+    0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+    0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+    0xF0, 0x80, 0xF0, 0x80, 0x80  // F
+};
+chip8::chip8() {
+  std::copy_n(chip8_fonts.begin(), chip8_fonts.size(), memory.begin());
+}
+
 void chip8::load_memory(std::vector<uint8_t> rom_opcodes) {
   std::copy_n(rom_opcodes.begin(), rom_opcodes.size(),
               memory.begin() + prog_mem_begin);
@@ -54,6 +74,8 @@ std::array<uint8_t, 16> chip8::get_V_registers() const { return V; }
 std::stack<uint16_t> chip8::get_stack() const { return hw_stack; }
 
 uint16_t chip8::get_prog_counter() const { return prog_counter; }
+uint8_t chip8::get_delay_counter() const { return delay_timer; }
+uint8_t chip8::get_sound_counter() const { return sound_timer; }
 
 void chip8::step_one_cycle() {
   // The memory is read in big endian, i.e., MSB first
@@ -64,6 +86,13 @@ void chip8::step_one_cycle() {
   // turned to an int
   prog_counter = static_cast<uint16_t>(prog_counter + 2);
 
+  if (delay_timer > 0) {
+    --delay_timer;
+  }
+  if (sound_timer > 0) {
+    // Use SFML to BEEP
+    --sound_timer;
+  }
   switch (first_nibble(opcode)) {
   // OPCODE 6XNN: Store number NN in register VX
   case (0x6000): {
@@ -81,7 +110,7 @@ void chip8::step_one_cycle() {
     // Set VF to 01 if a carry occurs else to 0
     else if (last_nibble(opcode) == 4) {
       const auto [Vx, Vy] = get_XY_nibbles(opcode);
-      const uint16_t sum = static_cast<uint16_t>(V[Vy] + V[Vx]);
+      const auto sum = static_cast<uint16_t>(V[Vy] + V[Vx]);
       // mask the sum with 0b100000000 (0x100) to get the overflow bit
       V[0xF] = static_cast<uint8_t>((sum & 0x100) >> 8);
       V[Vx] = static_cast<uint8_t>(sum);
@@ -177,13 +206,15 @@ void chip8::step_one_cycle() {
   }
   // OPCODE BNNN : Jump to address NNN + V0
   case (0xB000): {
-    prog_counter = static_cast<uint16_t>(last_three_nibbles(opcode) + V[0]);
+    prog_counter =
+        static_cast<uint16_t>(last_three_nibbles(opcode) + V[0]) & 0x0FFF;
+    ;
     break;
   }
   // OPCODE 2NNN : Execute subroutine starting at address NNN
   case (0x2000): {
     hw_stack.push(prog_counter);
-    prog_counter = last_three_nibbles(opcode);
+    prog_counter = last_three_nibbles(opcode) & 0x0FFF;
     break;
   }
   case (0x0000): {
@@ -204,7 +235,7 @@ void chip8::step_one_cycle() {
     const auto Vx = static_cast<uint8_t>(second_nibble(opcode) >> 8);
     const uint8_t cmp_value = last_two_nibbles(opcode);
     if (V[Vx] == cmp_value) {
-      prog_counter = static_cast<uint16_t>(prog_counter + 2);
+      prog_counter = static_cast<uint16_t>(prog_counter + 2) & 0x0FFF;
     }
     break;
   }
@@ -214,25 +245,45 @@ void chip8::step_one_cycle() {
     const auto Vx = static_cast<uint8_t>(second_nibble(opcode) >> 8);
     const uint8_t cmp_value = last_two_nibbles(opcode);
     if (V[Vx] != cmp_value) {
-      prog_counter = static_cast<uint16_t>(prog_counter + 2);
+      prog_counter = static_cast<uint16_t>(prog_counter + 2) & 0x0FFF;
     }
     break;
   }
-  // OPCODE 5XNN : Skip the following instruction if the value 
-  // of register VX is equal to the value of register VY 
+  // OPCODE 5XNN : Skip the following instruction if the value
+  // of register VX is equal to the value of register VY
   case (0x5000): {
     const auto [Vx, Vy] = get_XY_nibbles(opcode);
     if (V[Vx] == V[Vy]) {
-      prog_counter = static_cast<uint16_t>(prog_counter + 2);
+      prog_counter = static_cast<uint16_t>(prog_counter + 2) & 0x0FFF;
     }
     break;
   }
-  // OPCODE 9XNN : Skip the following instruction if the value 
-  // of register VX is not equal to the value of register VY 
+  // OPCODE 9XNN : Skip the following instruction if the value
+  // of register VX is not equal to the value of register VY
   case (0x9000): {
     const auto [Vx, Vy] = get_XY_nibbles(opcode);
     if (V[Vx] != V[Vy]) {
-      prog_counter = static_cast<uint16_t>(prog_counter + 2);
+      prog_counter = static_cast<uint16_t>(prog_counter + 2) & 0x0FFF;
+    }
+    break;
+  }
+  case (0xF000): {
+    // OPCODE FX15:	Set the delay timer to the value of register VX
+    if (last_two_nibbles(opcode) == 0x15) {
+      const auto Vx = static_cast<uint8_t>(second_nibble(opcode) >> 8);
+      delay_timer = V[Vx];
+    }
+    // OPCODE FX07: Store the current value of the delay timer in register VX
+    else if (last_two_nibbles(opcode) == 0x07) {
+      const auto Vx = static_cast<uint8_t>(second_nibble(opcode) >> 8);
+      V[Vx] = delay_timer;
+    }
+    // OPCODE FX18: Set the sound timer to the value of register VX
+    else if (last_two_nibbles(opcode) == 0x18) {
+      const auto Vx = static_cast<uint8_t>(second_nibble(opcode) >> 8);
+      sound_timer = V[Vx];
+    } else {
+      fmt::print("Unrecognized opcode: {0:#x} \n", opcode);
     }
     break;
   }
