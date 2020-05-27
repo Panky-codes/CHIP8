@@ -420,4 +420,33 @@ TEST_CASE("Opcode verification") {
 
     REQUIRE(emulator.get_I_register() == 0x0C34);
   }
+  SECTION("DXYN DISPLAY check 1 byte") {
+    std::vector<uint8_t> rom{0x61, 0x05,0x62, 0x05,0xD1,0x11};
+
+    emulator.load_memory(rom);
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    auto disp = emulator.get_display();
+
+    for (size_t i = 0; i < 8; i++)
+    {
+      REQUIRE(disp.at((5 + (display_x*5) + i)) == (0xF0 >>i));
+    }
+  }
+  SECTION("DXYN DISPLAY check 1 byte with XOR operation") {
+    std::vector<uint8_t> rom{0x61, 0x05,0x62, 0x05,0xD1,0x11,0xD1,0x11};
+
+    emulator.load_memory(rom);
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    auto disp = emulator.get_display();
+
+    for (size_t i = 0; i < 8; i++)
+    {
+      REQUIRE(disp.at((5 + (display_x*5) + i)) == 0);
+    }
+  }
 }

@@ -78,6 +78,7 @@ uint16_t chip8::get_prog_counter() const { return prog_counter; }
 uint8_t chip8::get_delay_counter() const { return delay_timer; }
 uint8_t chip8::get_sound_counter() const { return sound_timer; }
 uint16_t chip8::get_I_register() const { return I; }
+std::array<uint8_t, display_size> chip8::get_display() const { return display; }
 
 void chip8::step_one_cycle() {
   // The memory is read in big endian, i.e., MSB first
@@ -225,7 +226,7 @@ void chip8::step_one_cycle() {
       prog_counter = hw_stack.top();
       hw_stack.pop();
     } else if (last_two_nibbles(opcode) == 0xE0) {
-      // TODO: Implement Clear screen
+      display = {0};
     } else {
       fmt::print("Unrecognized opcode: {0:#x} \n", opcode);
     }
@@ -297,6 +298,32 @@ void chip8::step_one_cycle() {
   // OPCODE ANNN: Store memory address NNN in register I
   case (0xA000): {
     I = last_three_nibbles(opcode);
+    break;
+  }
+  // OPCODE DXYN: Draw a sprite at position VX, VY with N bytes
+  // of sprite data starting at the address stored in I
+  // Set VF to 01 if any set pixels are changed to unset, and 00 otherwise
+  // TODO: Too many cast required. Check why
+  case (0xD000): {
+    const auto [Vx, Vy] = get_XY_nibbles(opcode);
+    const auto N = last_nibble(opcode);
+
+    for (uint16_t y = 0; y < N; y++) {
+      auto pos = static_cast<uint16_t>(V[Vx] + (display_x * (y + V[Vy])));
+      uint8_t sprite = memory.at(static_cast<uint16_t>(I + y));
+
+      for (uint16_t x = 0; x < 8; x++) {
+        auto actual_pos = static_cast<uint16_t>(pos + x);
+        if ((sprite >> x)) {
+          V[0xF] = 0;
+          if (!(display[actual_pos] ^ (sprite >> x))) {
+            V[0xF] = 1;
+          }
+          display[actual_pos] =
+              static_cast<uint8_t>(display[actual_pos] ^ sprite >> x);
+        }
+      }
+    }
     break;
   }
   }
