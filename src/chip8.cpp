@@ -316,6 +316,26 @@ void chip8::step_one_cycle() {
       memory[I + 1] = MidB;
       memory[I + 2] = LSB;
     }
+    // OPCODE FX55: Store the values of registers V0 to VX
+    // inclusive in memory starting at address I
+    // I is set to I + X + 1 after operation
+    else if (last_two_nibbles(opcode) == 0x55) {
+      const auto Vx = static_cast<uint8_t>((second_nibble(opcode) >> 8));
+      for (size_t i = 0; i <= Vx; i++) {
+        memory[I + i] = V[i];
+      }
+      I = static_cast<uint16_t>(I + Vx + 1);
+    }
+    // OPCODE FX65: Fill registers V0 to VX
+    // inclusive with the values stored in memory starting at address I
+    // I is set to I + X + 1 after operation
+    else if (last_two_nibbles(opcode) == 0x65) {
+      const auto Vx = static_cast<uint8_t>((second_nibble(opcode) >> 8));
+      for (size_t i = 0; i <= Vx; i++) {
+        V[i] = memory[I + i];
+      }
+      I = static_cast<uint16_t>(I + Vx + 1);
+    }
     // OPCODE FX1E: Add the value stored in register VX to register I
     else if (last_two_nibbles(opcode) == 0x1E) {
       const auto Vx = static_cast<uint8_t>(second_nibble(opcode) >> 8);

@@ -493,7 +493,7 @@ TEST_CASE("Opcode verification") {
   }
   SECTION("FX29 LDA I with hex font address") {
     // LDA font for F
-    std::vector<uint8_t> rom{0x61, 0x05, 0x62, 0x05, 0xFD,0x29, 0xD1, 0x11};
+    std::vector<uint8_t> rom{0x61, 0x05, 0x62, 0x05, 0xFD, 0x29, 0xD1, 0x11};
 
     emulator.load_memory(rom);
     emulator.step_one_cycle();
@@ -541,5 +541,46 @@ TEST_CASE("Opcode verification") {
     REQUIRE(memory[0x0100] == 0);
     REQUIRE(memory[0x0101] == 0);
     REQUIRE(memory[0x0102] == 8);
+  }
+  SECTION("FX55 CPY V to I") {
+    std::vector<uint8_t> rom{0xA1, 0x00, 0x60, 0x08, 0x65,
+                             0x68, 0x6F, 0xF1, 0xFF, 0x55};
+
+    emulator.load_memory(rom);
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+
+    auto memory = emulator.get_memory_dump();
+    std::size_t I = emulator.get_I_register();
+
+    REQUIRE(memory[I - 1] == 0xF1);
+    REQUIRE(memory[I - 15 - 1] == 0x08);
+    REQUIRE(memory[I - 10 - 1] == 0x68);
+  }
+  SECTION("FX65 CPY I to V") {
+    // Set I to 0x100
+    // Set V[0xF] = 0xF1
+    // Copy V[0xF] to memory at I + 0xF
+    // Set V[0xF] = 0x11
+    // Copy the value from memory 0xF1 back to V[0xF]
+    std::vector<uint8_t> rom{0xA1, 0x00, 0x6F, 0xF1, 0xFF, 0x55,
+                             0x6F, 0x11, 0xA1, 0x00, 0xFF, 0x65};
+
+    emulator.load_memory(rom);
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+
+    auto V = emulator.get_V_registers();
+    std::size_t I = emulator.get_I_register();
+
+    REQUIRE(V[0xF] == 0xF1);
+    REQUIRE(I == (0x100 + 0xF + 0x01));
   }
 }
