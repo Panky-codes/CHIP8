@@ -2,6 +2,12 @@
 #include "fmt/format.h"
 #include <random>
 
+struct BCD_t {
+  uint8_t MSB;
+  uint8_t MidB;
+  uint8_t LSB;
+};
+
 // Mask function to get the first Nibble 0xN000
 // example: input is 0x6133, output will be 0x6000
 static constexpr uint16_t first_nibble(const uint16_t opcode) noexcept {
@@ -43,6 +49,15 @@ get_XY_nibbles(const uint16_t opcode) noexcept {
   return {(second_nibble(opcode) >> 8), (third_nibble(opcode) >> 4)};
 }
 
+static constexpr BCD_t parse_BCD(const uint8_t number) {
+
+  BCD_t BCD{0, 0, 0};
+  BCD.LSB = number % 10;
+  BCD.MidB = static_cast<uint8_t>(((number % 100) - BCD.LSB) / 10);
+  BCD.MSB = static_cast<uint8_t>((number - BCD.MidB) / 100);
+  return BCD;
+}
+
 static constexpr std::array<uint8_t, 80> chip8_fonts = {
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
     0x20, 0x60, 0x20, 0x20, 0x70, // 1
@@ -72,6 +87,7 @@ void chip8::load_memory(std::vector<uint8_t> rom_opcodes) {
 
 std::array<uint8_t, 16> chip8::get_V_registers() const { return V; }
 std::array<uint8_t, 16> chip8::get_Keys_array() const { return Keys; }
+std::array<uint8_t, 4096> chip8::get_memory_dump() const { return memory; }
 std::stack<uint16_t> chip8::get_stack() const { return hw_stack; }
 
 uint16_t chip8::get_prog_counter() const { return prog_counter; }
@@ -285,6 +301,20 @@ void chip8::step_one_cycle() {
     else if (last_two_nibbles(opcode) == 0x18) {
       const auto Vx = static_cast<uint8_t>(second_nibble(opcode) >> 8);
       sound_timer = V[Vx];
+    }
+    // OPCODE FX29: Set I to the memory address of the sprite data
+    // corresponding to the hexadecimal digit stored in register VX
+    else if (last_two_nibbles(opcode) == 0x29) {
+      I = static_cast<uint16_t>(5 * (second_nibble(opcode) >> 8));
+    }
+    // OPCODE FX33: Store the binary-coded decimal equivalent of
+    // the value stored in register VX at addresses I, I+1, and I+2
+    else if (last_two_nibbles(opcode) == 0x33) {
+      const auto Vx = static_cast<uint8_t>((second_nibble(opcode) >> 8));
+      auto [MSB, MidB, LSB] = parse_BCD(V[Vx]);
+      memory[I] = MSB;
+      memory[I + 1] = MidB;
+      memory[I + 2] = LSB;
     }
     // OPCODE FX1E: Add the value stored in register VX to register I
     else if (last_two_nibbles(opcode) == 0x1E) {

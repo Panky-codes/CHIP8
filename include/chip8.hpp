@@ -18,6 +18,7 @@ public:
   void step_one_cycle();
   [[nodiscard]] std::array<uint8_t, 16> get_V_registers() const;
   [[nodiscard]] std::array<uint8_t, 16> get_Keys_array() const;
+  [[nodiscard]] std::array<uint8_t, 4096> get_memory_dump() const;
   [[nodiscard]] std::array<uint8_t, display_size>
   get_display() const;
   [[nodiscard]] uint16_t get_prog_counter() const;

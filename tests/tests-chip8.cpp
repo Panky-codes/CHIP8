@@ -411,7 +411,7 @@ TEST_CASE("Opcode verification") {
     REQUIRE(emulator.get_I_register() == 0x0C32);
   }
   SECTION("FX1E ADD Vx to I register") {
-    std::vector<uint8_t> rom{0x6C, 0x02,0xAC, 0x32, 0xFC, 0x1E};
+    std::vector<uint8_t> rom{0x6C, 0x02, 0xAC, 0x32, 0xFC, 0x1E};
 
     emulator.load_memory(rom);
     emulator.step_one_cycle();
@@ -421,7 +421,9 @@ TEST_CASE("Opcode verification") {
     REQUIRE(emulator.get_I_register() == 0x0C34);
   }
   SECTION("DXYN DISPLAY check 1 byte") {
-    std::vector<uint8_t> rom{0x61, 0x05,0x62, 0x05,0xD1,0x11};
+    // I value is 0, so the DRW instruction uses the font data
+    // for "0" which is 0xF0 from {0xF0, 0x90, 0x90, 0x90, 0xF0}
+    std::vector<uint8_t> rom{0x61, 0x05, 0x62, 0x05, 0xD1, 0x21};
 
     emulator.load_memory(rom);
     emulator.step_one_cycle();
@@ -429,13 +431,34 @@ TEST_CASE("Opcode verification") {
     emulator.step_one_cycle();
     auto disp = emulator.get_display();
 
-    for (size_t i = 0; i < 8; i++)
-    {
-      REQUIRE(disp.at((5 + (display_x*5) + i)) == (0xF0 >>i));
+    for (size_t i = 0; i < 8; i++) {
+      REQUIRE(disp.at((5 + (display_x * 5) + i)) == (0xF0 >> i));
+    }
+  }
+  SECTION("DXYN DISPLAY check 3 bytes") {
+    // I value is 0, so the DRW instruction uses the font data
+    // for "0" which is 0xF0,0x90,0x90 from {0xF0, 0x90, 0x90, 0x90, 0xF0}
+    std::vector<uint8_t> rom{0x61, 0x05, 0x62, 0x05, 0xD1, 0x23};
+
+    emulator.load_memory(rom);
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    auto disp = emulator.get_display();
+
+    for (size_t i = 0; i < 8; i++) {
+      REQUIRE(disp.at((5 + (display_x * 5) + i)) == (0xF0 >> i));
+    }
+    for (size_t i = 0; i < 8; i++) {
+      REQUIRE(disp.at((5 + (display_x * 6) + i)) == (0x90 >> i));
+    }
+    for (size_t i = 0; i < 8; i++) {
+      REQUIRE(disp.at((5 + (display_x * 7) + i)) == (0x90 >> i));
     }
   }
   SECTION("DXYN DISPLAY check 1 byte with XOR operation") {
-    std::vector<uint8_t> rom{0x61, 0x05,0x62, 0x05,0xD1,0x11,0xD1,0x11};
+    // X ^ X = 0, this test is to check if XOR is done correctly.
+    std::vector<uint8_t> rom{0x61, 0x05, 0x62, 0x05, 0xD1, 0x13, 0xD1, 0x23};
 
     emulator.load_memory(rom);
     emulator.step_one_cycle();
@@ -444,9 +467,79 @@ TEST_CASE("Opcode verification") {
     emulator.step_one_cycle();
     auto disp = emulator.get_display();
 
-    for (size_t i = 0; i < 8; i++)
-    {
-      REQUIRE(disp.at((5 + (display_x*5) + i)) == 0);
+    for (size_t i = 0; i < 8; i++) {
+      REQUIRE(disp.at((5 + (display_x * 5) + i)) == 0);
     }
+    for (size_t i = 0; i < 8; i++) {
+      REQUIRE(disp.at((5 + (display_x * 6) + i)) == 0);
+    }
+    for (size_t i = 0; i < 8; i++) {
+      REQUIRE(disp.at((5 + (display_x * 7) + i)) == 0);
+    }
+  }
+  SECTION("00E0 CLR DISPLAY") {
+    std::vector<uint8_t> rom{0x61, 0x05, 0x62, 0x05, 0xD1, 0x21, 0x00, 0xE0};
+
+    emulator.load_memory(rom);
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    auto disp = emulator.get_display();
+
+    for (size_t i = 0; i < 8; i++) {
+      REQUIRE(disp.at((5 + (display_x * 5) + i)) == 0);
+    }
+  }
+  SECTION("FX29 LDA I with hex font address") {
+    // LDA font for F
+    std::vector<uint8_t> rom{0x61, 0x05, 0x62, 0x05, 0xFD,0x29, 0xD1, 0x11};
+
+    emulator.load_memory(rom);
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    auto disp = emulator.get_display();
+
+    for (size_t i = 0; i < 8; i++) {
+      REQUIRE(disp.at((5 + (display_x * 5) + i)) == (0xE0 >> i));
+    }
+  }
+  SECTION("FX33 BCD for 213") {
+    std::vector<uint8_t> rom{0x61, 0xD5, 0xA1, 0x00, 0xF1, 0x33};
+
+    emulator.load_memory(rom);
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    auto memory = emulator.get_memory_dump();
+    REQUIRE(memory[0x0100] == 2);
+    REQUIRE(memory[0x0101] == 1);
+    REQUIRE(memory[0x0102] == 3);
+  }
+  SECTION("FX33 BCD for 75") {
+    std::vector<uint8_t> rom{0x61, 0x4B, 0xA1, 0x00, 0xF1, 0x33};
+
+    emulator.load_memory(rom);
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    auto memory = emulator.get_memory_dump();
+    REQUIRE(memory[0x0100] == 0);
+    REQUIRE(memory[0x0101] == 7);
+    REQUIRE(memory[0x0102] == 5);
+  }
+  SECTION("FX33 BCD for 8") {
+    std::vector<uint8_t> rom{0x61, 0x08, 0xA1, 0x00, 0xF1, 0x33};
+
+    emulator.load_memory(rom);
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    emulator.step_one_cycle();
+    auto memory = emulator.get_memory_dump();
+    REQUIRE(memory[0x0100] == 0);
+    REQUIRE(memory[0x0101] == 0);
+    REQUIRE(memory[0x0102] == 8);
   }
 }
