@@ -19,6 +19,7 @@ conan_cmake_run(
   catch2/2.11.0
   fmt/6.1.2
   imgui-sfml/2.1@bincrafters/stable
+  trompeloeil/v36@rollbear/stable 
   OPTIONS
   ${CONAN_EXTRA_OPTIONS}
   BASIC_SETUP

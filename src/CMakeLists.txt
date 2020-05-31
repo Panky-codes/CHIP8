@@ -2,7 +2,7 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 
 add_library(chip8 SHARED chip8.cpp)
 target_link_libraries(
-      chip8 PRIVATE CONAN_PKG::fmt project_warnings project_options)
+      chip8 PRIVATE CONAN_PKG::fmt CONAN_PKG::imgui-sfml project_warnings project_options)
 
 add_executable(main_process main.cpp)
 target_link_libraries(

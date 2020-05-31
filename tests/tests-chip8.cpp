@@ -1,7 +1,8 @@
 #include "catch2/catch.hpp"
 #include "chip8.hpp"
+#include "trompeloeil.hpp"
 
-TEST_CASE("Opcode verification") {
+TEST_CASE("Opcodes for Data Registers") {
   chip8 emulator;
   SECTION("6XNN STA NN in Vx") {
     std::vector<uint8_t> rom{0x61, 0x32};
@@ -229,6 +230,9 @@ TEST_CASE("Opcode verification") {
 
     REQUIRE(actual_V[5] < 0xDD);
   }
+}
+TEST_CASE("Opcodes for Flow Control with Jumps") {
+  chip8 emulator;
   SECTION("1NNN JUMP") {
     std::vector<uint8_t> rom{0x17, 0xDD};
 
@@ -246,6 +250,9 @@ TEST_CASE("Opcode verification") {
 
     REQUIRE(emulator.get_prog_counter() == (0x7DD + 0x32));
   }
+}
+TEST_CASE("Opcodes for Subroutines") {
+  chip8 emulator;
   SECTION("2NNN SUBROUTINE") {
     std::vector<uint8_t> rom{0x60, 0x32, 0x27, 0xDD};
 
@@ -277,6 +284,9 @@ TEST_CASE("Opcode verification") {
     REQUIRE(actual_V[1] == (0x36));
     REQUIRE(actual_V[5] == (0x56));
   }
+}
+TEST_CASE("Opcodes for Conditional Branching using Skips") {
+  chip8 emulator;
   SECTION("3XNN IF EQUAL") {
     std::vector<uint8_t> rom{0x68, 0x32, 0x38, 0x32, 0x68, 0x82, 0x68, 0x12};
 
@@ -373,6 +383,9 @@ TEST_CASE("Opcode verification") {
 
     REQUIRE(actual_V[8] == 0x82);
   }
+}
+TEST_CASE("Opcodes for Timers") {
+  chip8 emulator;
   SECTION("FX15 LDA Delay time") {
     std::vector<uint8_t> rom{0x68, 0x32, 0xF8, 0x15};
 
@@ -402,6 +415,9 @@ TEST_CASE("Opcode verification") {
 
     REQUIRE(emulator.get_sound_counter() == 0x32);
   }
+}
+TEST_CASE("Opcodes for I registers") {
+  chip8 emulator;
   SECTION("ANNN STA NNN in I register") {
     std::vector<uint8_t> rom{0xAC, 0x32};
 
@@ -420,6 +436,9 @@ TEST_CASE("Opcode verification") {
 
     REQUIRE(emulator.get_I_register() == 0x0C34);
   }
+}
+TEST_CASE("Opcodes for Graphics") {
+  chip8 emulator;
   SECTION("DXYN DISPLAY check 1 byte") {
     // I value is 0, so the DRW instruction uses the font data
     // for "0" which is 0xF0 from {0xF0, 0x90, 0x90, 0x90, 0xF0}
@@ -506,6 +525,9 @@ TEST_CASE("Opcode verification") {
       REQUIRE(disp.at((5 + (display_x * 5) + i)) == (0xE0 >> i));
     }
   }
+}
+TEST_CASE("Opcodes for BCD") {
+  chip8 emulator;
   SECTION("FX33 BCD for 213") {
     std::vector<uint8_t> rom{0x61, 0xD5, 0xA1, 0x00, 0xF1, 0x33};
 
@@ -542,6 +564,9 @@ TEST_CASE("Opcode verification") {
     REQUIRE(memory[0x0101] == 0);
     REQUIRE(memory[0x0102] == 8);
   }
+}
+TEST_CASE("Opcodes for Register Values and Memory Storage") {
+  chip8 emulator;
   SECTION("FX55 CPY V to I") {
     std::vector<uint8_t> rom{0xA1, 0x00, 0x60, 0x08, 0x65,
                              0x68, 0x6F, 0xF1, 0xFF, 0x55};

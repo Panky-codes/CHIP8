@@ -61,6 +61,12 @@ int main() {
     if (ImGui::Button("Load"))
       whitePixel = sf::Color::Blue;
     ImGui::End();
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
+      whitePixel = sf::Color::White;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
+      whitePixel = sf::Color::Blue;
+    }
 
     // ImGui::InputText("string", buf, IM_ARRAYSIZE(buf));
     // ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
