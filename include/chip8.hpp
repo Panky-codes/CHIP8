@@ -13,7 +13,8 @@ static constexpr auto display_size = display_x * display_y;
 class chip8 {
 public:
   chip8();
-  void load_memory(std::vector<uint8_t> rom_opcodes);
+  void load_memory(const std::vector<uint8_t>& rom_opcodes);
+  void load_memory(const std::vector<char>& rom_opcodes);
   void reset();
   void step_one_cycle();
   [[nodiscard]] std::array<uint8_t, 16> get_V_registers() const;

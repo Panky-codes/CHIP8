@@ -140,10 +140,20 @@ chip8::chip8() {
   std::copy_n(chip8_fonts.begin(), chip8_fonts.size(), memory.begin());
 }
 
-void chip8::load_memory(std::vector<uint8_t> rom_opcodes) {
-  std::copy_n(rom_opcodes.begin(), rom_opcodes.size(),
-              memory.begin() + prog_mem_begin);
+void chip8::load_memory(const std::vector<uint8_t> &rom_opcodes) {
+  // std::copy_n(rom_opcodes.begin(), rom_opcodes.size(),
+  //             memory.begin() + prog_mem_begin);
+  for (size_t i = 0; i < rom_opcodes.size(); i++) {
+    memory[i + prog_mem_begin] = rom_opcodes[i];
+  }
 }
+
+// void chip8::load_memory(const std::vector<char> &rom_opcodes) {
+
+//   for (size_t i = 0; i < rom_opcodes.size(); i++) {
+//     memory[i + prog_mem_begin] = static_cast<uint8_t>(rom_opcodes[i]);
+//   }
+// }
 
 std::array<uint8_t, 16> chip8::get_V_registers() const { return V; }
 std::array<bool, 16> chip8::get_Keys_array() const { return Keys; }
