@@ -1,22 +1,26 @@
+// System headers
 #include <array>
 #include <fstream>
 #include <vector>
 
-#include "imgui-SFML.h"
-#include "imgui.h"
+// Third-party headers
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/CircleShape.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System/Clock.hpp>
 #include <SFML/Window/Event.hpp>
+#include <argparse/argparse.hpp>
+#include <fmt/format.h>
+#include <imgui-SFML.h>
+#include <imgui.h>
 
+// Own headers
 #include "chip8.hpp"
-#include "fmt/format.h"
 
-static void read_file(std::vector<char> &rom) {
+static void read_file(std::vector<char> &rom, const std::string &file_name) {
   std::ifstream file;
-  file.open("test_opcode.ch8", std::ios::binary | std::ios::ate);
+  file.open(file_name.c_str(), std::ios::binary | std::ios::ate);
 
   if (file.is_open()) {
     std::streampos size = file.tellg();
@@ -29,7 +33,19 @@ static void read_file(std::vector<char> &rom) {
   }
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+  // CLI Parser
+  argparse::ArgumentParser program("CHIP8");
+  program.add_argument("ROM").help("Specify the name of the ROM");
+  try {
+    program.parse_args(argc, argv);
+  } catch (const std::runtime_error &err) {
+    std::cout << err.what() << std::endl;
+    std::cout << program;
+    exit(0);
+  }
+  auto file_name = program.get<std::string>("ROM");
+
   std::vector<char> rom;
   chip8 emulator;
   constexpr int scaleFactor = 4;
@@ -50,7 +66,7 @@ int main() {
   CHIP8_window.create(64.F, 32.F, sf::Color::Black);
 
   // Load ROM
-  read_file(rom);
+  read_file(rom, file_name);
   emulator.load_memory(rom);
 
   sf::Clock deltaClock;

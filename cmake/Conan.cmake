@@ -20,6 +20,7 @@ conan_cmake_run(
   fmt/6.1.2
   imgui-sfml/2.1@bincrafters/stable
   trompeloeil/v36@rollbear/stable 
+  argparse/2.1 
   OPTIONS
   ${CONAN_EXTRA_OPTIONS}
   BASIC_SETUP
