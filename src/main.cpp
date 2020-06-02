@@ -14,32 +14,26 @@
 #include "chip8.hpp"
 #include "fmt/format.h"
 
-// static constexpr std::array<uint8_t, 5> pixels{0x20, 0x60, 0x20, 0x20, 0x70};
-
-static void read_file(std::vector<unsigned char> &rom) {
+static void read_file(std::vector<char> &rom) {
   std::ifstream file;
-
-  file.open("BC_test.ch8", std::ios::binary | std::ios::ate);
+  file.open("test_opcode.ch8", std::ios::binary | std::ios::ate);
 
   if (file.is_open()) {
     std::streampos size = file.tellg();
-    char* buffer = new char[size];
-    rom.reserve(size);
+    rom.resize(size);
     file.seekg(0, std::ios::beg);
-    file.read(buffer, size);
+    file.read(rom.data(), size);
     file.close();
-    for (uint i = 0; i < size; i++)
-    {
-      rom.push_back(static_cast<uint8_t>(buffer[i]));
-    }
-    delete[] buffer;
-  }
-  else{
+  } else {
     throw std::bad_exception();
   }
 }
 
 int main() {
+  std::vector<char> rom;
+  chip8 emulator;
+  constexpr int scaleFactor = 4;
+
   sf::RenderWindow window(sf::VideoMode(640.f, 480.f), "ImGui + SFML = <3");
   window.setFramerateLimit(60);
   ImGui::SFML::Init(window);
@@ -50,19 +44,16 @@ int main() {
   sf::Texture texture;
   sf::Sprite chip8_sprite;
 
-  constexpr int scaleFactor = 4;
   chip8_sprite.setScale(scaleFactor, scaleFactor);
   chip8_sprite.setPosition(float(window.getSize().x / 2) - (32 * scaleFactor),
                            float(window.getSize().y / 2) - (16 * scaleFactor));
-  CHIP8_window.create(64.F, 32.F, sf::Color::White);
+  CHIP8_window.create(64.F, 32.F, sf::Color::Black);
 
-  sf::Clock deltaClock;
-
-  std::vector<unsigned char> rom;
+  // Load ROM
   read_file(rom);
-  chip8 emulator;
   emulator.load_memory(rom);
 
+  sf::Clock deltaClock;
   while (window.isOpen()) {
     sf::Event event;
     while (window.pollEvent(event)) {
@@ -87,21 +78,19 @@ int main() {
     ImGui::End();
 
     window.clear();
-    // unsigned int y = 0;
-    // for (auto pixel : pixels) {
-    //   for (unsigned int i = 0; i < 8; i++) {
-    //     if ((pixel & (0x80 >> i))) {
-    //       CHIP8_window.setPixel(i, y, spritePixel);
-    //     } else {
-    //       CHIP8_window.setPixel(i, y, bgPixel);
-    //     }
-    //   }
-    //   ++y;
-    // }
-
-    // Load ROM
 
     emulator.step_one_cycle();
+    auto gfx = emulator.get_display();
+
+    for (uint y = 0; y < display_y; ++y) {
+      for (uint x = 0; x < display_x; ++x) {
+        if ((gfx[x + (display_x * y)]) == 1) {
+          CHIP8_window.setPixel(x, y, spritePixel);
+        } else {
+          CHIP8_window.setPixel(x, y, bgPixel);
+        }
+      }
+    }
 
     texture.loadFromImage(CHIP8_window);
     chip8_sprite.setTexture(texture);

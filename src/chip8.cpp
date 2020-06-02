@@ -148,12 +148,12 @@ void chip8::load_memory(const std::vector<uint8_t> &rom_opcodes) {
   }
 }
 
-// void chip8::load_memory(const std::vector<char> &rom_opcodes) {
+void chip8::load_memory(const std::vector<char> &rom_opcodes) {
 
-//   for (size_t i = 0; i < rom_opcodes.size(); i++) {
-//     memory[i + prog_mem_begin] = static_cast<uint8_t>(rom_opcodes[i]);
-//   }
-// }
+  for (size_t i = 0; i < rom_opcodes.size(); i++) {
+    memory[i + prog_mem_begin] = static_cast<uint8_t>(rom_opcodes[i]);
+  }
+}
 
 std::array<uint8_t, 16> chip8::get_V_registers() const { return V; }
 std::array<bool, 16> chip8::get_Keys_array() const { return Keys; }
@@ -447,13 +447,13 @@ void chip8::step_one_cycle() {
 
       for (uint16_t x = 0; x < 8; x++) {
         auto actual_pos = static_cast<uint16_t>(pos + x);
-        if ((sprite >> x)) {
+        if ((sprite & (0x80 >> x))) {
           V[0xF] = 0;
-          if (!(display[actual_pos] ^ (sprite >> x))) {
+          if (!(display[actual_pos] ^ (1))) {
             V[0xF] = 1;
           }
           display[actual_pos] =
-              static_cast<uint8_t>(display[actual_pos] ^ sprite >> x);
+              static_cast<uint8_t>(display[actual_pos] ^ (1));
         }
       }
     }

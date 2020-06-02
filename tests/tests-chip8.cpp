@@ -451,7 +451,8 @@ TEST_CASE("Opcodes for Graphics") {
     auto disp = emulator.get_display();
 
     for (size_t i = 0; i < 8; i++) {
-      REQUIRE(disp.at((5 + (display_x * 5) + i)) == (0xF0 >> i));
+      REQUIRE(disp.at(5 + (display_x * 5) + i) ==
+              ((0xF0 & (0x80 >> i)) > 0 ? 1 : 0));
     }
   }
   SECTION("DXYN DISPLAY check 3 bytes") {
@@ -466,13 +467,16 @@ TEST_CASE("Opcodes for Graphics") {
     auto disp = emulator.get_display();
 
     for (size_t i = 0; i < 8; i++) {
-      REQUIRE(disp.at((5 + (display_x * 5) + i)) == (0xF0 >> i));
+      REQUIRE(disp.at(5 + (display_x * 5) + i) ==
+              ((0xF0 & (0x80 >> i)) > 0 ? 1 : 0));
     }
     for (size_t i = 0; i < 8; i++) {
-      REQUIRE(disp.at((5 + (display_x * 6) + i)) == (0x90 >> i));
+      REQUIRE(disp.at(5 + (display_x * 6) + i) ==
+              ((0x90 & (0x80 >> i)) > 0 ? 1 : 0));
     }
     for (size_t i = 0; i < 8; i++) {
-      REQUIRE(disp.at((5 + (display_x * 7) + i)) == (0x90 >> i));
+      REQUIRE(disp.at(5 + (display_x * 7) + i) ==
+              ((0x90 & (0x80 >> i)) > 0 ? 1 : 0));
     }
   }
   SECTION("DXYN DISPLAY check 1 byte with XOR operation") {
@@ -522,7 +526,8 @@ TEST_CASE("Opcodes for Graphics") {
     auto disp = emulator.get_display();
 
     for (size_t i = 0; i < 8; i++) {
-      REQUIRE(disp.at((5 + (display_x * 5) + i)) == (0xE0 >> i));
+      REQUIRE(disp.at(5 + (display_x * 5) + i) ==
+              ((0xE0 & (0x80 >> i)) > 0 ? 1 : 0));
     }
   }
 }
