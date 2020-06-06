@@ -14,7 +14,7 @@ matrix:
   # G++ 
   #
   - os: linux
-env:
+    env:
       - TEST="G++"
     script:
       - cmake -DENABLE_TESTING=ON ..
