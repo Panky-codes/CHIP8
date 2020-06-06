@@ -448,7 +448,7 @@ TEST_CASE("Opcodes for Graphics") {
     emulator.step_one_cycle();
     emulator.step_one_cycle();
     emulator.step_one_cycle();
-    auto disp = emulator.get_display();
+    auto disp = emulator.get_display_pixels();
 
     for (size_t i = 0; i < 8; i++) {
       REQUIRE(disp.at(5 + (display_x * 5) + i) ==
@@ -464,7 +464,7 @@ TEST_CASE("Opcodes for Graphics") {
     emulator.step_one_cycle();
     emulator.step_one_cycle();
     emulator.step_one_cycle();
-    auto disp = emulator.get_display();
+    auto disp = emulator.get_display_pixels();
 
     for (size_t i = 0; i < 8; i++) {
       REQUIRE(disp.at(5 + (display_x * 5) + i) ==
@@ -488,7 +488,7 @@ TEST_CASE("Opcodes for Graphics") {
     emulator.step_one_cycle();
     emulator.step_one_cycle();
     emulator.step_one_cycle();
-    auto disp = emulator.get_display();
+    auto disp = emulator.get_display_pixels();
 
     for (size_t i = 0; i < 8; i++) {
       REQUIRE(disp.at((5 + (display_x * 5) + i)) == 0);
@@ -508,7 +508,7 @@ TEST_CASE("Opcodes for Graphics") {
     emulator.step_one_cycle();
     emulator.step_one_cycle();
     emulator.step_one_cycle();
-    auto disp = emulator.get_display();
+    auto disp = emulator.get_display_pixels();
 
     for (size_t i = 0; i < 8; i++) {
       REQUIRE(disp.at((5 + (display_x * 5) + i)) == 0);
@@ -523,7 +523,7 @@ TEST_CASE("Opcodes for Graphics") {
     emulator.step_one_cycle();
     emulator.step_one_cycle();
     emulator.step_one_cycle();
-    auto disp = emulator.get_display();
+    auto disp = emulator.get_display_pixels();
 
     for (size_t i = 0; i < 8; i++) {
       REQUIRE(disp.at(5 + (display_x * 5) + i) ==

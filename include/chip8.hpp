@@ -13,19 +13,20 @@ static constexpr auto display_size = display_x * display_y;
 class chip8 {
 public:
   chip8();
-  void load_memory(const std::vector<uint8_t>& rom_opcodes);
-  void load_memory(const std::vector<char>& rom_opcodes);
+  void load_memory(const std::vector<uint8_t> &rom_opcodes);
+  void load_memory(const std::vector<char> &rom_opcodes);
   void reset();
   void step_one_cycle();
   [[nodiscard]] std::array<uint8_t, 16> get_V_registers() const;
   [[nodiscard]] std::array<bool, 16> get_Keys_array() const;
   [[nodiscard]] std::array<uint8_t, 4096> get_memory_dump() const;
-  [[nodiscard]] std::array<uint8_t, display_size> get_display() const;
+  [[nodiscard]] std::array<uint8_t, display_size> get_display_pixels() const;
   [[nodiscard]] uint16_t get_prog_counter() const;
   [[nodiscard]] uint8_t get_delay_counter() const;
   [[nodiscard]] uint8_t get_sound_counter() const;
   [[nodiscard]] uint16_t get_I_register() const;
   [[nodiscard]] std::stack<uint16_t> get_stack() const;
+  [[nodiscard]] bool get_display_flag() const;
 
 private:
   std::array<uint8_t, 4096> memory{0};
@@ -39,6 +40,7 @@ private:
   uint8_t delay_timer{0};
   uint8_t sound_timer{0};
   bool isKeyBPressed{false};
+  bool isDisplaySet{false};
 
   // Pvt helper functions
   void store_keyboard_input();

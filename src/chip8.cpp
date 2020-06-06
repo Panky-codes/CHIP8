@@ -164,7 +164,8 @@ uint16_t chip8::get_prog_counter() const { return prog_counter; }
 uint8_t chip8::get_delay_counter() const { return delay_timer; }
 uint8_t chip8::get_sound_counter() const { return sound_timer; }
 uint16_t chip8::get_I_register() const { return I; }
-std::array<uint8_t, display_size> chip8::get_display() const { return display; }
+bool chip8::get_display_flag() const { return isDisplaySet; }
+std::array<uint8_t, display_size> chip8::get_display_pixels() const { return display; }
 
 void chip8::step_one_cycle() {
   // The memory is read in big endian, i.e., MSB first
@@ -182,6 +183,7 @@ void chip8::step_one_cycle() {
     // Use SFML to BEEP
     --sound_timer;
   }
+  isDisplaySet = false;
   store_keyboard_input();
   switch (first_nibble(opcode)) {
   // OPCODE 6XNN: Store number NN in register VX
@@ -312,8 +314,11 @@ void chip8::step_one_cycle() {
     if (last_two_nibbles(opcode) == 0xEE) {
       prog_counter = hw_stack.top();
       hw_stack.pop();
-    } else if (last_two_nibbles(opcode) == 0xE0) {
+    } 
+    // OPCODE 00E0 : Clear display
+    else if (last_two_nibbles(opcode) == 0xE0) {
       display = {0};
+      isDisplaySet = true;
     } else {
       fmt::print("Unrecognized opcode: {0:#x} \n", opcode);
     }
@@ -452,11 +457,11 @@ void chip8::step_one_cycle() {
           if (!(display[actual_pos] ^ (1))) {
             V[0xF] = 1;
           }
-          display[actual_pos] =
-              static_cast<uint8_t>(display[actual_pos] ^ (1));
+          display[actual_pos] = static_cast<uint8_t>(display[actual_pos] ^ (1));
         }
       }
     }
+    isDisplaySet = true;
     break;
   }
   case (0xE000): {

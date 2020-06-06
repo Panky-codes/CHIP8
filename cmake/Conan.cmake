@@ -16,11 +16,8 @@ conan_add_remote(NAME bincrafters URL
 conan_cmake_run(
   REQUIRES
   ${CONAN_EXTRA_REQUIRES}
-  catch2/2.11.0
-  fmt/6.1.2
-  imgui-sfml/2.1@bincrafters/stable
-  trompeloeil/v36@rollbear/stable 
-  argparse/2.1 
+  CONANFILE 
+  conanfile.txt
   OPTIONS
   ${CONAN_EXTRA_OPTIONS}
   BASIC_SETUP

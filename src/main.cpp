@@ -5,9 +5,6 @@
 
 // Third-party headers
 #include <SFML/Graphics.hpp>
-#include <SFML/Graphics/CircleShape.hpp>
-#include <SFML/Graphics/RectangleShape.hpp>
-#include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System/Clock.hpp>
 #include <SFML/Window/Event.hpp>
 #include <argparse/argparse.hpp>
@@ -29,7 +26,8 @@ static void read_file(std::vector<char> &rom, const std::string &file_name) {
     file.read(rom.data(), size);
     file.close();
   } else {
-    throw std::bad_exception();
+    throw std::invalid_argument("Given filename " + file_name +
+                                " does not exist!");
   }
 }
 
@@ -46,30 +44,37 @@ int main(int argc, char *argv[]) {
   }
   auto file_name = program.get<std::string>("ROM");
 
+  // Emulator setup and load rom
   std::vector<char> rom;
   chip8 emulator;
+  std::array<uint8_t, display_size> gfx{0};
+  try {
+    read_file(rom, file_name);
+  } catch (std::exception &e) {
+    std::cout << e.what() << std::endl;
+    std::abort();
+  }
+  emulator.load_memory(rom);
+
+  // SFML Graphics
   constexpr int scaleFactor = 4;
 
-  sf::RenderWindow window(sf::VideoMode(640.f, 480.f), "ImGui + SFML = <3");
+  sf::RenderWindow window(sf::VideoMode(640.f, 480.f), "CHIP8 Emulator/Interpretter");
   window.setFramerateLimit(60);
   ImGui::SFML::Init(window);
 
-  sf::Color bgPixel(0, 0, 0, 255);           // Background pixels are black
-  sf::Color spritePixel(255, 255, 255, 255); // Sprite pixel is White
+  sf::Color bgPixel{sf::Color::Black};     // Background pixels are black
+  sf::Color spritePixel{sf::Color::Green}; // Sprite pixel is White
   sf::Image CHIP8_window;
   sf::Texture texture;
   sf::Sprite chip8_sprite;
+  sf::Clock deltaClock;
 
   chip8_sprite.setScale(scaleFactor, scaleFactor);
   chip8_sprite.setPosition(float(window.getSize().x / 2) - (32 * scaleFactor),
                            float(window.getSize().y / 2) - (16 * scaleFactor));
   CHIP8_window.create(64.F, 32.F, sf::Color::Black);
 
-  // Load ROM
-  read_file(rom, file_name);
-  emulator.load_memory(rom);
-
-  sf::Clock deltaClock;
   while (window.isOpen()) {
     sf::Event event;
     while (window.pollEvent(event)) {
@@ -85,22 +90,26 @@ int main(int argc, char *argv[]) {
     ImGui::Begin("Change Background");
     if (ImGui::Button("Black")) {
       bgPixel = sf::Color::Black;
-      spritePixel = sf::Color::White;
+      spritePixel = sf::Color::Green;
     }
-    if (ImGui::Button("White")) {
-      bgPixel = sf::Color::White;
+    if (ImGui::Button("Green")) {
+      bgPixel = sf::Color::Green;
       spritePixel = sf::Color::Black;
     }
     ImGui::End();
 
     window.clear();
 
-    emulator.step_one_cycle();
-    auto gfx = emulator.get_display();
-
+    int nr = 10;
+    while (nr--) {
+      emulator.step_one_cycle();
+      if (emulator.get_display_flag()) {
+        gfx = emulator.get_display_pixels();
+      }
+    }
     for (uint y = 0; y < display_y; ++y) {
       for (uint x = 0; x < display_x; ++x) {
-        if ((gfx[x + (display_x * y)]) == 1) {
+        if ((gfx.at(x + (display_x * y))) == 1) {
           CHIP8_window.setPixel(x, y, spritePixel);
         } else {
           CHIP8_window.setPixel(x, y, bgPixel);
