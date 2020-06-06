@@ -21,7 +21,7 @@ static void read_file(std::vector<char> &rom, const std::string &file_name) {
 
   if (file.is_open()) {
     std::streampos size = file.tellg();
-    rom.resize(size);
+    rom.resize(static_cast<std::size_t>(size));
     file.seekg(0, std::ios::beg);
     file.read(rom.data(), size);
     file.close();
