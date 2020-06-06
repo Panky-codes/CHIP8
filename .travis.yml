@@ -19,6 +19,7 @@ matrix:
     script:
       - cmake -DENABLE_TESTING=ON ..
       - make
+      - make test
 
   #
   # Clang 
@@ -27,7 +28,7 @@ matrix:
     env:
       - TEST="Clang"
     script:
-      - cmake -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ ..
+      - cmake -DENABLE_TESTING=ON -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ ..
       - make
       - make test
 
@@ -67,7 +68,7 @@ matrix:
         packages:
           - valgrind
     script:
-      - cmake ..
+      - cmake -DENABLE_TESTING=ON ..
       - make
       - ctest -T memcheck
  
