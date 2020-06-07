@@ -38,4 +38,3 @@ script:
   - export DISPLAY=:0.0
   - cmake -D ENABLE_COVERAGE:BOOL=TRUE -D ENABLE_TESTING=ON .
   - cmake --build . -- -j2
-  - ctest -j6 -C Debug -T test --output-on-failure 
