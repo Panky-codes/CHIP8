@@ -8,7 +8,7 @@ I recently got interested in emulation programming as I was always fascniated wi
 
 ## Status
 This project is still WIP. As a first step, I tested my implementation of OPCODES with the test ROM from [here](https://github.com/corax89/chip8-test-rom). The results looks promising as shown below:
-![test_rom](docs/test_rom.png)
+![test_rom](docs/test_rom.png)<br />
 However, just because the OPCODES are implemented correctly, does not mean the emulation is perfect. I tried playing some games such as PONG, and I feel there is still some work to do even though I am able to play the game.
 
 ## TODO
