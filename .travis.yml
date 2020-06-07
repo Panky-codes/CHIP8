@@ -1,55 +1,38 @@
-dist: bionic
 language: cpp
 
 install:
   - pip install --user conan cmake
 
-before_script:
-  - mkdir build
-  - cd build
-
-matrix:
+jobs:
   include:
-  #
-  # G++ 
-  #
-  - os: linux
-    env:
-      - TEST="G++"
-    script:
-      - cmake -DENABLE_TESTING=ON ..
-      - make
+    - os: linux
+      dist: bionic
+      compiler: gcc
+      env:
+        - GCC_VER="9"
+        - MATRIX_EVAL="CC=gcc-${GCC_VER} && CXX=g++-${GCC_VER}"
 
-  #
-  # Clang 
-  #
-  - os: linux
-    env:
-      - TEST="Clang"
-    script:
-      - cmake -DENABLE_TESTING=ON -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ ..
-      - make
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-9
+            - g++-9
+      after_script:
+        - bash <(curl -s https://codecov.io/bash) -x /usr/bin/gcov-${GCC_VER}
+    - os: linux
+      dist: bionic
+      compiler: clang
+      env:
+        - MATRIX_EVAL="CC=clang && CXX=clang++"
+      addons: { apt: { packages: ['doxygen'] } }
 
-  #
-  # Codecov
-  #
-  - os: linux
-    env:
-      - TEST="Codecov"
-    script:
-      - cmake -DENABLE_COVERAGE=ON -DENABLE_TESTING=ON ..
-      - make
-      - ctest -j2
-      - cd ..
-      - bash <(curl -s https://codecov.io/bash)
 
-  #
-  # Google Sanitizer
-  #
-  - os: linux
-    env:
-      - TEST="Google Sanitizer"
-    script:
-      - cmake -DENABLE_TESTING=ON -DENABLE_SANITIZER_ADDRESS:BOOL=TRUE -DENABLE_SANITIZER_LEAK:BOOL=TRUE -DENABLE_SANITIZER_MEMORY:BOOL=TRUE -DENABLE_SANITIZER_UNDEFINED_BEHAVIOR:BOOL=TRUE ..
-      - make
-      - ctest -j2
+before_script:
+  - eval "${MATRIX_EVAL}"
+
+script:
+  - cmake -D ENABLE_COVERAGE:BOOL=TRUE -D ENABLE_TESTING=ON .
+  - cmake --build . -- -j2
+  - ctest -j2
