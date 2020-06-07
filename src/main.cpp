@@ -59,7 +59,8 @@ int main(int argc, char *argv[]) {
   // SFML Graphics
   constexpr int scaleFactor = 4;
 
-  sf::RenderWindow window(sf::VideoMode(640.f, 480.f), "CHIP8 Emulator/Interpretter");
+  sf::RenderWindow window(sf::VideoMode(640.f, 480.f),
+                          "CHIP8 Emulator/Interpretter");
   window.setFramerateLimit(60);
   ImGui::SFML::Init(window);
 
@@ -96,6 +97,31 @@ int main(int argc, char *argv[]) {
       bgPixel = sf::Color::Green;
       spritePixel = sf::Color::Black;
     }
+    ImGui::End();
+    ImGui::Begin("Internal Register");
+    ImGui::SetWindowPos(ImVec2(5,5), ImGuiCond_Once);
+    ImGui::BeginChild("Scrolling", ImVec2(300, 700));
+    auto V_regiters = emulator.get_V_registers();
+    auto index = 0;
+    ImGui::TextColored(ImVec4(1,0,0,1), "PC     : %d", emulator.get_prog_counter());
+    ImGui::Separator();
+    ImGui::TextColored(ImVec4(1,0,0,1), "I      : %#x", emulator.get_I_register());
+    ImGui::Separator();
+    ImGui::TextColored(ImVec4(1,0,0,1), "V register");
+    for (auto reg : V_regiters) {
+      ImGui::Text("V[0x%x] : %#x", index, reg);
+      ++index;
+    }
+    ImGui::Separator();
+    auto stack = emulator.get_stack();
+    auto index1 = stack.size();
+    ImGui::TextColored(ImVec4(1,0,0,1), "Stack");
+    while(!stack.empty()){
+      ImGui::Text("V[0x%x] : %#x", index, stack.top());
+      stack.pop();
+      --index1;
+    }
+    ImGui::EndChild();
     ImGui::End();
 
     window.clear();

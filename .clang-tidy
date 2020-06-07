@@ -1,7 +1,8 @@
 ---
 Checks:          'clang-diagnostic-*,clang-analyzer-*,readability-*,cppcoreguidelines-* ,bug-prone-*, modernize-*, performance-*, 
 misc-*, -modernize-use-trailing-return-type,-cppcoreguidelines-avoid-magic-numbers, -readability-magic-numbers,
--cppcoreguidelines-owning-memory,-cppcoreguidelines-pro-bounds-pointer-arithmetic, -cppcoreguidelines-pro-bounds-constant-array-index'
+-cppcoreguidelines-owning-memory,-cppcoreguidelines-pro-bounds-pointer-arithmetic, -cppcoreguidelines-pro-bounds-constant-array-index, 
+-cppcoreguidelines-pro-type-vararg'
 WarningsAsErrors: ''
 HeaderFilterRegex: ''
 AnalyzeTemporaryDtors: false
