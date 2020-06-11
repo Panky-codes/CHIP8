@@ -1,6 +1,6 @@
 #include "catch2/catch.hpp"
 #include "chip8.hpp"
-#include "trompeloeil.hpp"
+#include "mock_keyboard.hpp"
 
 TEST_CASE("Opcodes for Data Registers") {
   chip8 emulator;

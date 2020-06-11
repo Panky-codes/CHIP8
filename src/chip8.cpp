@@ -80,79 +80,18 @@ static constexpr std::array<uint8_t, 80> chip8_fonts = {
     0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
 
-// The caller should reset the events for Keys and isKeyBPressed
-void chip8::store_keyboard_input() {
-  using namespace sf;
-  if (Keyboard::isKeyPressed(Keyboard::Num5)) {
-    isKeyBPressed = true;
-    Keys[0x01] = true;
-  } else if (Keyboard::isKeyPressed(Keyboard::Num6)) {
-    isKeyBPressed = true;
-    Keys[0x02] = true;
-  } else if (Keyboard::isKeyPressed(Keyboard::Num7)) {
-    isKeyBPressed = true;
-    Keys[0x03] = true;
-  } else if (Keyboard::isKeyPressed(Keyboard::Num8)) {
-    isKeyBPressed = true;
-    Keys[0x0C] = true;
-  } else if (Keyboard::isKeyPressed(Keyboard::T)) {
-    isKeyBPressed = true;
-    Keys[0x04] = true;
-  } else if (Keyboard::isKeyPressed(Keyboard::Y)) {
-    isKeyBPressed = true;
-    Keys[0x05] = true;
-  } else if (Keyboard::isKeyPressed(Keyboard::U)) {
-    isKeyBPressed = true;
-    Keys[0x06] = true;
-  } else if (Keyboard::isKeyPressed(Keyboard::I)) {
-    isKeyBPressed = true;
-    Keys[0x0D] = true;
-  } else if (Keyboard::isKeyPressed(Keyboard::G)) {
-    isKeyBPressed = true;
-    Keys[0x07] = true;
-  } else if (Keyboard::isKeyPressed(Keyboard::H)) {
-    isKeyBPressed = true;
-    Keys[0x08] = true;
-  } else if (Keyboard::isKeyPressed(Keyboard::J)) {
-    isKeyBPressed = true;
-    Keys[0x09] = true;
-  } else if (Keyboard::isKeyPressed(Keyboard::K)) {
-    isKeyBPressed = true;
-    Keys[0x0E] = true;
-  } else if (Keyboard::isKeyPressed(Keyboard::B)) {
-    isKeyBPressed = true;
-    Keys[0x0A] = true;
-  } else if (Keyboard::isKeyPressed(Keyboard::N)) {
-    isKeyBPressed = true;
-    Keys[0x00] = true;
-  } else if (Keyboard::isKeyPressed(Keyboard::M)) {
-    isKeyBPressed = true;
-    Keys[0x0B] = true;
-  } else if (Keyboard::isKeyPressed(Keyboard::Comma)) {
-    isKeyBPressed = true;
-    Keys[0x0F] = true;
-  } else {
-    // fmt::print("Unrecognized Key is pressed");
-  }
-}
-
 chip8::chip8() {
   std::copy_n(chip8_fonts.begin(), chip8_fonts.size(), memory.begin());
 }
 
 void chip8::load_memory(const std::vector<uint8_t> &rom_opcodes) {
-  // std::copy_n(rom_opcodes.begin(), rom_opcodes.size(),
-  //             memory.begin() + prog_mem_begin);
-  for (size_t i = 0; i < rom_opcodes.size(); i++) {
-    memory[i + prog_mem_begin] = rom_opcodes[i];
-  }
+  std::copy_n(rom_opcodes.begin(), rom_opcodes.size(),
+              memory.begin() + prog_mem_begin);
 }
 
 void chip8::load_memory(const std::vector<char> &rom_opcodes) {
-
-  for (size_t i = 0; i < rom_opcodes.size(); i++) {
-    memory[i + prog_mem_begin] = static_cast<uint8_t>(rom_opcodes[i]);
-  }
+  std::copy_n(rom_opcodes.begin(), rom_opcodes.size(),
+              memory.begin() + prog_mem_begin);
 }
 
 std::array<uint8_t, 16> chip8::get_V_registers() const { return V; }
@@ -184,7 +123,6 @@ void chip8::step_one_cycle() {
     --sound_timer;
   }
   isDisplaySet = false;
-  store_keyboard_input();
   switch (first_nibble(opcode)) {
   // OPCODE 6XNN: Store number NN in register VX
   case (0x6000): {
@@ -415,9 +353,8 @@ void chip8::step_one_cycle() {
     // OPCODE FX0A: Wait for a keypress and store the result in register VX
     else if (last_two_nibbles(opcode) == 0x0A) {
       const auto Vx = static_cast<uint8_t>((second_nibble(opcode) >> 8));
-      if (isKeyBPressed) {
-        auto *iter = std::find(Keys.begin(), Keys.end(), true);
-        auto index = static_cast<uint8_t>(std::distance(Keys.begin(), iter));
+      auto [isKeyPressed, index] = numpad.whichKeyIndexIfPressed();
+      if (isKeyPressed) {
         V[Vx] = index;
       } else {
         // reset the counter to repeat this opcode until key is pressed
@@ -469,7 +406,7 @@ void chip8::step_one_cycle() {
     // corresponding to the hex value currently stored in register VX is pressed
     if (last_two_nibbles(opcode) == 0x9E) {
       const auto Vx = static_cast<uint8_t>(second_nibble(opcode) >> 8);
-      if (isKeyBPressed && Keys[V[Vx]]) {
+      if (numpad.isKeyVxPressed(V[Vx])) {
         prog_counter = static_cast<uint16_t>(prog_counter + 2);
       }
     }
@@ -477,7 +414,7 @@ void chip8::step_one_cycle() {
     // to the hex value currently stored in register VX is not pressed
     else if (last_two_nibbles(opcode) == 0xA1) {
       const auto Vx = static_cast<uint8_t>(second_nibble(opcode) >> 8);
-      if (isKeyBPressed && !Keys[V[Vx]]) {
+      if (!numpad.isKeyVxPressed(V[Vx])) {
         prog_counter = static_cast<uint16_t>(prog_counter + 2);
       }
     } else {
@@ -487,6 +424,5 @@ void chip8::step_one_cycle() {
   }
   }
   // reset Key events
-  isKeyBPressed = false;
-  std::for_each(Keys.begin(), Keys.end(), [](auto &key) { key = false; });
+  numpad.clearKeyInput();
 }

@@ -6,6 +6,8 @@
 #include <stack>
 #include <vector>
 
+#include"keyboard.hpp"
+
 static constexpr auto display_x = 64;
 static constexpr auto display_y = 32;
 static constexpr auto display_size = display_x * display_y;
@@ -34,6 +36,7 @@ private:
   std::stack<uint16_t> hw_stack;
   std::array<uint8_t, display_size> display{0};
   std::array<bool, 16> Keys{false};
+  keyboard numpad{};
   uint16_t I{0};
   const uint16_t prog_mem_begin = 512;
   uint16_t prog_counter{prog_mem_begin};
