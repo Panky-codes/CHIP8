@@ -12,7 +12,7 @@ This project is still WIP. As a first step, I tested my implementation of OPCODE
 However, just because the OPCODES are implemented correctly, does not mean the emulation is perfect. I tried playing some games such as PONG, and I feel there is still some work to do even though I am able to play the game.
 
 ## TODO
-- [ ]  With SFML, enable sound for sound timer
-- [ ]  Create a debugger using IMGUI
-- [ ]  Use Mocks for SFML to unit test keyboard inputs
-- [ ]  Make travis CI work with the unit tests
+- [x] Use Mocks for SFML to unit test keyboard inputs
+- [ ] With SFML, enable sound for sound timer
+- [ ] Create a debugger using IMGUI
+- [ ] Make travis CI work with the unit tests
