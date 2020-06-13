@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <stack>
 #include <vector>
+#include <memory>
 
 #include"keyboard.hpp"
 
@@ -15,6 +16,7 @@ static constexpr auto display_size = display_x * display_y;
 class chip8 {
 public:
   chip8();
+  explicit chip8(std::unique_ptr<keyboard> keyPtr);
   void load_memory(const std::vector<uint8_t> &rom_opcodes);
   void load_memory(const std::vector<char> &rom_opcodes);
   void reset();
@@ -36,7 +38,7 @@ private:
   std::stack<uint16_t> hw_stack;
   std::array<uint8_t, display_size> display{0};
   std::array<bool, 16> Keys{false};
-  keyboard numpad{};
+  std::unique_ptr<keyboard> numpad{new keyboard()};
   uint16_t I{0};
   const uint16_t prog_mem_begin = 512;
   uint16_t prog_counter{prog_mem_begin};
@@ -44,9 +46,6 @@ private:
   uint8_t sound_timer{0};
   bool isKeyBPressed{false};
   bool isDisplaySet{false};
-
-  // Pvt helper functions
-  void store_keyboard_input();
 };
 
 #endif

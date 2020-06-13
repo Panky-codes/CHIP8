@@ -84,6 +84,10 @@ chip8::chip8() {
   std::copy_n(chip8_fonts.begin(), chip8_fonts.size(), memory.begin());
 }
 
+chip8::chip8(std::unique_ptr<keyboard> keyPtr) : chip8{}{
+  numpad = std::move(keyPtr);
+}
+
 void chip8::load_memory(const std::vector<uint8_t> &rom_opcodes) {
   std::copy_n(rom_opcodes.begin(), rom_opcodes.size(),
               memory.begin() + prog_mem_begin);
@@ -353,7 +357,7 @@ void chip8::step_one_cycle() {
     // OPCODE FX0A: Wait for a keypress and store the result in register VX
     else if (last_two_nibbles(opcode) == 0x0A) {
       const auto Vx = static_cast<uint8_t>((second_nibble(opcode) >> 8));
-      auto [isKeyPressed, index] = numpad.whichKeyIndexIfPressed();
+      auto [isKeyPressed, index] = numpad->whichKeyIndexIfPressed();
       if (isKeyPressed) {
         V[Vx] = index;
       } else {
@@ -406,7 +410,7 @@ void chip8::step_one_cycle() {
     // corresponding to the hex value currently stored in register VX is pressed
     if (last_two_nibbles(opcode) == 0x9E) {
       const auto Vx = static_cast<uint8_t>(second_nibble(opcode) >> 8);
-      if (numpad.isKeyVxPressed(V[Vx])) {
+      if (numpad->isKeyVxPressed(V[Vx])) {
         prog_counter = static_cast<uint16_t>(prog_counter + 2);
       }
     }
@@ -414,7 +418,7 @@ void chip8::step_one_cycle() {
     // to the hex value currently stored in register VX is not pressed
     else if (last_two_nibbles(opcode) == 0xA1) {
       const auto Vx = static_cast<uint8_t>(second_nibble(opcode) >> 8);
-      if (!numpad.isKeyVxPressed(V[Vx])) {
+      if (!numpad->isKeyVxPressed(V[Vx])) {
         prog_counter = static_cast<uint16_t>(prog_counter + 2);
       }
     } else {
@@ -424,5 +428,5 @@ void chip8::step_one_cycle() {
   }
   }
   // reset Key events
-  numpad.clearKeyInput();
+  numpad->clearKeyInput();
 }
