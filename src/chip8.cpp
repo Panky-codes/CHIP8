@@ -389,6 +389,7 @@ void chip8::step_one_cycle() {
 
     for (uint16_t y = 0; y < N; y++) {
       auto pos = static_cast<uint16_t>(V[Vx] + (display_x * (y + V[Vy])));
+      pos = (pos > display_size) ? display_size : pos;
       uint8_t sprite = memory.at(static_cast<uint16_t>(I + y));
 
       for (uint16_t x = 0; x < 8; x++) {

@@ -13,6 +13,6 @@ However, just because the OPCODES are implemented correctly, does not mean the e
 
 ## TODO
 - [x] Use Mocks for SFML to unit test keyboard inputs
+- [x] Make travis CI work with the unit tests
 - [ ] With SFML, enable sound for sound timer
 - [ ] Create a debugger using IMGUI
-- [ ] Make travis CI work with the unit tests
