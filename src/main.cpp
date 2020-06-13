@@ -1,3 +1,6 @@
+// Own headers
+#include "chip8.hpp"
+
 // System headers
 #include <array>
 #include <fstream>
@@ -12,8 +15,6 @@
 #include <imgui-SFML.h>
 #include <imgui.h>
 
-// Own headers
-#include "chip8.hpp"
 
 static void read_file(std::vector<char> &rom, const std::string &file_name) {
   std::ifstream file;

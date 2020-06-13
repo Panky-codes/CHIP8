@@ -9,7 +9,6 @@ jobs:
       dist: bionic
       compiler: gcc
       env:
-        - DISPLAY=:0.0
         - GCC_VER="9"
         - MATRIX_EVAL="CC=gcc-${GCC_VER} && CXX=g++-${GCC_VER}"
 
@@ -26,7 +25,6 @@ jobs:
       dist: bionic
       compiler: clang
       env:
-        - DISPLAY=:0.0
         - MATRIX_EVAL="CC=clang && CXX=clang++"
       addons: { apt: { packages: ['doxygen'] } }
 
@@ -35,6 +33,7 @@ before_script:
   - eval "${MATRIX_EVAL}"
 
 script:
-  - export DISPLAY=:0.0
   - cmake -D ENABLE_COVERAGE:BOOL=TRUE -D ENABLE_TESTING=ON .
   - cmake --build . -- -j2
+  - ctest -j2
+

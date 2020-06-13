@@ -1,6 +1,6 @@
 #include "catch2/catch.hpp"
 #include "chip8.hpp"
-#include "trompeloeil.hpp"
+#include "mock_keyboard.hpp"
 
 TEST_CASE("Opcodes for Data Registers") {
   chip8 emulator;
@@ -612,5 +612,95 @@ TEST_CASE("Opcodes for Register Values and Memory Storage") {
 
     REQUIRE(V[0xF] == 0xF1);
     REQUIRE(I == (0x100 + 0xF + 0x01));
+  }
+}
+
+TEST_CASE("OPCODES with Keyboard input") {
+  using trompeloeil::_;
+  std::unique_ptr<mockKeyboard> mockKeyb{new mockKeyboard};
+
+  SECTION("Opcode EX9E return true") {
+    ALLOW_CALL(*mockKeyb, isKeyVxPressed(_)).RETURN(true);
+    ALLOW_CALL(*mockKeyb, clearKeyInput());
+    std::vector<uint8_t> rom{0xE1, 0x9E};
+    chip8 emulator{std::move(mockKeyb)};
+
+    emulator.load_memory(rom);
+    auto initial_pc = emulator.get_prog_counter();
+    emulator.step_one_cycle();
+    auto final_pc = emulator.get_prog_counter();
+
+    REQUIRE(final_pc == (initial_pc + 4));
+  }
+  SECTION("Opcode EX9E return false") {
+    ALLOW_CALL(*mockKeyb, isKeyVxPressed(_)).RETURN(false);
+    ALLOW_CALL(*mockKeyb, clearKeyInput());
+    std::vector<uint8_t> rom{0xE1, 0x9E};
+    chip8 emulator{std::move(mockKeyb)};
+
+    emulator.load_memory(rom);
+    auto initial_pc = emulator.get_prog_counter();
+    emulator.step_one_cycle();
+    auto final_pc = emulator.get_prog_counter();
+
+    REQUIRE(final_pc == (initial_pc + 2));
+  }
+  SECTION("Opcode EXA1 return true") {
+    ALLOW_CALL(*mockKeyb, isKeyVxPressed(_)).RETURN(false);
+    ALLOW_CALL(*mockKeyb, clearKeyInput());
+    std::vector<uint8_t> rom{0xE1, 0xA1};
+    chip8 emulator{std::move(mockKeyb)};
+
+    emulator.load_memory(rom);
+    auto initial_pc = emulator.get_prog_counter();
+    emulator.step_one_cycle();
+    auto final_pc = emulator.get_prog_counter();
+
+    REQUIRE(final_pc == (initial_pc + 4));
+  }
+  SECTION("Opcode EXA1 return false") {
+    ALLOW_CALL(*mockKeyb, isKeyVxPressed(_)).RETURN(true);
+    ALLOW_CALL(*mockKeyb, clearKeyInput());
+    std::vector<uint8_t> rom{0xE1, 0xA1};
+    chip8 emulator{std::move(mockKeyb)};
+
+    emulator.load_memory(rom);
+    auto initial_pc = emulator.get_prog_counter();
+    emulator.step_one_cycle();
+    auto final_pc = emulator.get_prog_counter();
+
+    REQUIRE(final_pc == (initial_pc + 2));
+  }
+  SECTION("Opcode FX0A return number 1 is keypressed") {
+    ALLOW_CALL(*mockKeyb, whichKeyIndexIfPressed())
+        .RETURN((std::pair<bool, uint8_t>(true, 0x01)));
+    ALLOW_CALL(*mockKeyb, clearKeyInput());
+    std::vector<uint8_t> rom{0xF2, 0x0A};
+    chip8 emulator{std::move(mockKeyb)};
+
+    emulator.load_memory(rom);
+    auto initial_pc = emulator.get_prog_counter();
+    emulator.step_one_cycle();
+    auto final_pc = emulator.get_prog_counter();
+    auto actual_V = emulator.get_V_registers();
+
+    REQUIRE(final_pc == (initial_pc + 2));
+    REQUIRE(actual_V[0x02] == (0x01));
+  }
+  SECTION("Opcode FX0A return no keypressed") {
+    ALLOW_CALL(*mockKeyb, whichKeyIndexIfPressed())
+        .RETURN((std::pair<bool, uint8_t>(false, 0x01)));
+    ALLOW_CALL(*mockKeyb, clearKeyInput());
+    std::vector<uint8_t> rom{0xF2, 0x0A};
+    chip8 emulator{std::move(mockKeyb)};
+
+    emulator.load_memory(rom);
+    auto initial_pc = emulator.get_prog_counter();
+    emulator.step_one_cycle();
+    auto final_pc = emulator.get_prog_counter();
+    auto actual_V = emulator.get_V_registers();
+
+    REQUIRE(final_pc == initial_pc);
+    REQUIRE(actual_V[0x02] == (0x0));
   }
 }
