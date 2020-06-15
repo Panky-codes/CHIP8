@@ -15,7 +15,6 @@
 #include <imgui-SFML.h>
 #include <imgui.h>
 
-
 static void read_file(std::vector<char> &rom, const std::string &file_name) {
   std::ifstream file;
   file.open(file_name.c_str(), std::ios::binary | std::ios::ate);
@@ -71,6 +70,7 @@ int main(int argc, char *argv[]) {
   sf::Texture texture;
   sf::Sprite chip8_sprite;
   sf::Clock deltaClock;
+  int slider_input = 10;
 
   chip8_sprite.setScale(scaleFactor, scaleFactor);
   chip8_sprite.setPosition(float(window.getSize().x / 2) - (32 * scaleFactor),
@@ -78,6 +78,15 @@ int main(int argc, char *argv[]) {
   CHIP8_window.create(64.F, 32.F, sf::Color::Black);
 
   while (window.isOpen()) {
+
+    // bool debugBreakpoint = true;
+    // while (debugBreakpoint) {
+    //   ImGui::Begin("Debug options");
+    //   if (ImGui::Button("Next")) {
+    //     debugBreakpoint = false;
+    //   }
+    //   ImGui::End();
+    // }
     sf::Event event;
     while (window.pollEvent(event)) {
       ImGui::SFML::ProcessEvent(event);
@@ -99,16 +108,19 @@ int main(int argc, char *argv[]) {
       spritePixel = sf::Color::Black;
     }
     ImGui::End();
+
     ImGui::Begin("Internal Register");
-    ImGui::SetWindowPos(ImVec2(5,5), ImGuiCond_Once);
-    ImGui::BeginChild("Scrolling", ImVec2(300, 700));
+    ImGui::SetWindowPos(ImVec2(5, 5), ImGuiCond_Once);
+    ImGui::BeginChild("Scrolling", ImVec2(300, 600));
     auto V_regiters = emulator.get_V_registers();
     auto index = 0;
-    ImGui::TextColored(ImVec4(1,0,0,1), "PC     : %d", emulator.get_prog_counter());
+    ImGui::TextColored(ImVec4(1, 0, 0, 1), "PC     : %d",
+                       emulator.get_prog_counter());
     ImGui::Separator();
-    ImGui::TextColored(ImVec4(1,0,0,1), "I      : %#x", emulator.get_I_register());
+    ImGui::TextColored(ImVec4(1, 0, 0, 1), "I      : %#x",
+                       emulator.get_I_register());
     ImGui::Separator();
-    ImGui::TextColored(ImVec4(1,0,0,1), "V register");
+    ImGui::TextColored(ImVec4(1, 0, 0, 1), "V register");
     for (auto reg : V_regiters) {
       ImGui::Text("V[0x%x] : %#x", index, reg);
       ++index;
@@ -116,8 +128,8 @@ int main(int argc, char *argv[]) {
     ImGui::Separator();
     auto stack = emulator.get_stack();
     auto index1 = stack.size();
-    ImGui::TextColored(ImVec4(1,0,0,1), "Stack");
-    while(!stack.empty()){
+    ImGui::TextColored(ImVec4(1, 0, 0, 1), "Stack");
+    while (!stack.empty()) {
       ImGui::Text("V[0x%x] : %#x", index, stack.top());
       stack.pop();
       --index1;
@@ -127,19 +139,25 @@ int main(int argc, char *argv[]) {
 
     window.clear();
 
-    int nr = 10;
-    while (nr--) {
+    ImGui::Begin("CPU frequency");
+    ImGui::SetWindowPos(ImVec2(800, 5), ImGuiCond_Once);
+    ImGui::BeginChild("", ImVec2(300, 20));
+    ImGui::SliderInt("", &slider_input, 1, 20);
+    ImGui::EndChild();
+    ImGui::End();
+
+    int cpu_freq = slider_input;
+    while (cpu_freq--) {
       emulator.step_one_cycle();
       if (emulator.get_display_flag()) {
         gfx = emulator.get_display_pixels();
-      }
-    }
-    for (uint y = 0; y < display_y; ++y) {
-      for (uint x = 0; x < display_x; ++x) {
-        if ((gfx.at(x + (display_x * y))) == 1) {
-          CHIP8_window.setPixel(x, y, spritePixel);
-        } else {
-          CHIP8_window.setPixel(x, y, bgPixel);
+
+        for (uint y = 0; y < display_y; ++y) {
+          for (uint x = 0; x < display_x; ++x) {
+            const auto pixel =
+                (gfx.at(x + (display_x * y)) == 1) ? spritePixel : bgPixel;
+            CHIP8_window.setPixel(x, y, pixel);
+          }
         }
       }
     }
@@ -150,6 +168,5 @@ int main(int argc, char *argv[]) {
     ImGui::SFML::Render(window);
     window.display();
   }
-
   ImGui::SFML::Shutdown();
 }
