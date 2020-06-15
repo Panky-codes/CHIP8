@@ -15,6 +15,12 @@
 #include <imgui-SFML.h>
 #include <imgui.h>
 
+// Constants
+static const sf::Color bgPixel{0, 0, 0, 255}; // Background pixels are black
+static const sf::Color spritePixel{0, 255, 0, 255}; // Sprite pixel is Green
+
+// Local function
+
 static void read_file(std::vector<char> &rom, const std::string &file_name) {
   std::ifstream file;
   file.open(file_name.c_str(), std::ios::binary | std::ios::ate);
@@ -28,6 +34,17 @@ static void read_file(std::vector<char> &rom, const std::string &file_name) {
   } else {
     throw std::invalid_argument("Given filename " + file_name +
                                 " does not exist!");
+  }
+}
+
+static void drawGfx(const std::array<uint8_t, display_size> &gfx,
+                    sf::Image &window) {
+  for (uint y = 0; y < display_y; ++y) {
+    for (uint x = 0; x < display_x; ++x) {
+      const auto pixel =
+          (gfx.at(x + (display_x * y)) == 1) ? spritePixel : bgPixel;
+      window.setPixel(x, y, pixel);
+    }
   }
 }
 
@@ -64,13 +81,12 @@ int main(int argc, char *argv[]) {
   window.setFramerateLimit(60);
   ImGui::SFML::Init(window);
 
-  sf::Color bgPixel{sf::Color::Black};     // Background pixels are black
-  sf::Color spritePixel{sf::Color::Green}; // Sprite pixel is White
   sf::Image CHIP8_window;
   sf::Texture texture;
   sf::Sprite chip8_sprite;
   sf::Clock deltaClock;
   int slider_input = 10;
+  bool fall_through = false;
 
   chip8_sprite.setScale(scaleFactor, scaleFactor);
   chip8_sprite.setPosition(float(window.getSize().x / 2) - (32 * scaleFactor),
@@ -79,14 +95,6 @@ int main(int argc, char *argv[]) {
 
   while (window.isOpen()) {
 
-    // bool debugBreakpoint = true;
-    // while (debugBreakpoint) {
-    //   ImGui::Begin("Debug options");
-    //   if (ImGui::Button("Next")) {
-    //     debugBreakpoint = false;
-    //   }
-    //   ImGui::End();
-    // }
     sf::Event event;
     while (window.pollEvent(event)) {
       ImGui::SFML::ProcessEvent(event);
@@ -97,17 +105,6 @@ int main(int argc, char *argv[]) {
     }
 
     ImGui::SFML::Update(window, deltaClock.restart());
-
-    ImGui::Begin("Change Background");
-    if (ImGui::Button("Black")) {
-      bgPixel = sf::Color::Black;
-      spritePixel = sf::Color::Green;
-    }
-    if (ImGui::Button("Green")) {
-      bgPixel = sf::Color::Green;
-      spritePixel = sf::Color::Black;
-    }
-    ImGui::End();
 
     ImGui::Begin("Internal Register");
     ImGui::SetWindowPos(ImVec2(5, 5), ImGuiCond_Once);
@@ -146,19 +143,27 @@ int main(int argc, char *argv[]) {
     ImGui::EndChild();
     ImGui::End();
 
+    bool step_next = false;
+    ImGui::Begin("Debugger");
+    if (ImGui::Button("Step Next")) {
+      step_next = true;
+    }
+    if (ImGui::Button("Continue")) {
+      fall_through = true;
+    }
+    if (ImGui::Button("Pause")) {
+      fall_through = false;
+    }
+    ImGui::End();
+
     int cpu_freq = slider_input;
     while (cpu_freq--) {
-      emulator.step_one_cycle();
+      if (fall_through || step_next) {
+        emulator.step_one_cycle();
+      }
       if (emulator.get_display_flag()) {
         gfx = emulator.get_display_pixels();
-
-        for (uint y = 0; y < display_y; ++y) {
-          for (uint x = 0; x < display_x; ++x) {
-            const auto pixel =
-                (gfx.at(x + (display_x * y)) == 1) ? spritePixel : bgPixel;
-            CHIP8_window.setPixel(x, y, pixel);
-          }
-        }
+        drawGfx(gfx, CHIP8_window);
       }
     }
 
