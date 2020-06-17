@@ -84,7 +84,7 @@ chip8::chip8() {
   std::copy_n(chip8_fonts.begin(), chip8_fonts.size(), memory.begin());
 }
 
-chip8::chip8(std::unique_ptr<keyboard> keyPtr) : chip8{}{
+chip8::chip8(std::unique_ptr<keyboard> keyPtr) : chip8{} {
   numpad = std::move(keyPtr);
 }
 
@@ -106,9 +106,12 @@ std::stack<uint16_t> chip8::get_stack() const { return hw_stack; }
 uint16_t chip8::get_prog_counter() const { return prog_counter; }
 uint8_t chip8::get_delay_counter() const { return delay_timer; }
 uint8_t chip8::get_sound_counter() const { return sound_timer; }
+std::string chip8::get_instruction() const { return instruction; }
 uint16_t chip8::get_I_register() const { return I; }
 bool chip8::get_display_flag() const { return isDisplaySet; }
-std::array<uint8_t, display_size> chip8::get_display_pixels() const { return display; }
+std::array<uint8_t, display_size> chip8::get_display_pixels() const {
+  return display;
+}
 
 void chip8::step_one_cycle() {
   // The memory is read in big endian, i.e., MSB first
@@ -132,6 +135,9 @@ void chip8::step_one_cycle() {
   case (0x6000): {
     const auto Vx = static_cast<uint8_t>(second_nibble(opcode) >> 8);
     V[Vx] = last_two_nibbles(opcode);
+    if constexpr (debug) {
+      instruction = fmt::format("LD {0:#x}, {1:#x}", Vx, V[Vx]);
+    }
     break;
   }
   case (0x8000): {
@@ -139,6 +145,10 @@ void chip8::step_one_cycle() {
     if (last_nibble(opcode) == 0) {
       const auto [Vx, Vy] = get_XY_nibbles(opcode);
       V[Vx] = V[Vy];
+
+      if constexpr (debug) {
+        instruction = fmt::format("LD {0:#x}, {1:#x}", Vx, Vy);
+      }
     }
     // OPCODE 8XY4 : Add the value of register VY to register VX
     // Set VF to 01 if a carry occurs else to 0
@@ -148,6 +158,10 @@ void chip8::step_one_cycle() {
       // mask the sum with 0b100000000 (0x100) to get the overflow bit
       V[0xF] = static_cast<uint8_t>((sum & 0x100) >> 8);
       V[Vx] = static_cast<uint8_t>(sum);
+
+      if constexpr (debug) {
+        instruction = fmt::format("ADD {0:#x}, {1:#x}", Vx, Vy);
+      }
     }
     // OPCODE 8XY5 : Subtract the value of register VY from register VX
     // Set VF to 01 if a borrow does not occur, else to 0
@@ -159,6 +173,10 @@ void chip8::step_one_cycle() {
         V[0xF] = 0;
       }
       V[Vx] = static_cast<uint8_t>(V[Vx] - V[Vy]);
+
+      if constexpr (debug) {
+        instruction = fmt::format("SUB {0:#x}, {1:#x}", Vx, Vy);
+      }
     }
     // OPCODE 8XY7 : Set register VX to the value of VY minus VX
     // Set VF to 01 if a borrow does not occur, else to 0
@@ -170,21 +188,37 @@ void chip8::step_one_cycle() {
         V[0xF] = 0;
       }
       V[Vx] = static_cast<uint8_t>(V[Vy] - V[Vx]);
+
+      if constexpr (debug) {
+        instruction = fmt::format("SUBN {0:#x}, {1:#x}", Vx, Vy);
+      }
     }
     // OPCODE 8XY2 : Set VX to VX AND VY
     else if (last_nibble(opcode) == 2) {
       const auto [Vx, Vy] = get_XY_nibbles(opcode);
       V[Vx] = V[Vx] & V[Vy];
+
+      if constexpr (debug) {
+        instruction = fmt::format("AND {0:#x}, {1:#x}", Vx, Vy);
+      }
     }
     // OPCODE 8XY1 : Set VX to VX OR VY
     else if (last_nibble(opcode) == 1) {
       const auto [Vx, Vy] = get_XY_nibbles(opcode);
       V[Vx] = V[Vx] | V[Vy];
+
+      if constexpr (debug) {
+        instruction = fmt::format("OR {0:#x}, {1:#x}", Vx, Vy);
+      }
     }
     // OPCODE 8XY3 : Set VX to VX XOR VY
     else if (last_nibble(opcode) == 3) {
       const auto [Vx, Vy] = get_XY_nibbles(opcode);
       V[Vx] = V[Vx] ^ V[Vy];
+
+      if constexpr (debug) {
+        instruction = fmt::format("XOR {0:#x}, {1:#x}", Vx, Vy);
+      }
     }
     // OPCODE 8XY6 : Store the value of register VY
     // shifted right one bit in register VX
@@ -196,6 +230,10 @@ void chip8::step_one_cycle() {
       V[0xF] = V[Vy] & 0x01;
       V[Vy] = static_cast<uint8_t>(V[Vy] >> 1);
       V[Vx] = V[Vy];
+
+      if constexpr (debug) {
+        instruction = fmt::format("SHR {0:#x}, {{,{1:#x}}}", Vx, Vy);
+      }
     }
     // OPCODE 8XYE : Store the value of register VY
     //  shifted left one bit in register VX
@@ -207,6 +245,10 @@ void chip8::step_one_cycle() {
       V[0xF] = static_cast<uint8_t>((V[Vy] & 0x80) >> 7);
       V[Vy] = static_cast<uint8_t>(V[Vy] << 1);
       V[Vx] = V[Vy];
+
+      if constexpr (debug) {
+        instruction = fmt::format("SHL {0:#x}, {{,{1:#x}}}", Vx, Vy);
+      }
     } else {
       // TODO: Probably error handling? Thrown an exception ?
       fmt::print("Unrecognized opcode: {0:#x} \n", opcode);
@@ -219,7 +261,12 @@ void chip8::step_one_cycle() {
     // static_cast replicates the actual CHIP8 adder where if a 8bit
     // overflow happens the addition resets to 0 once the value crosses
     // 255
-    V[Vx] = static_cast<uint8_t>((last_two_nibbles(opcode) + V[Vx]));
+    const auto NN = V[Vx];
+    V[Vx] = static_cast<uint8_t>((last_two_nibbles(opcode) + NN));
+
+    if constexpr (debug) {
+      instruction = fmt::format("ADD {0:#x}, {1:#x}", Vx, NN);
+    }
     break;
   }
   // OPCODE CXNN : Set VX to a random number with a mask of NN
@@ -231,24 +278,39 @@ void chip8::step_one_cycle() {
     std::uniform_int_distribution<int> idist(0, 255);
 
     V[Vx] = static_cast<uint8_t>(idist(rgen) & mask);
+
+    if constexpr (debug) {
+      instruction = fmt::format("RND {0:#x}, {1:#x}", Vx, V[Vx]);
+    }
     break;
   }
   // OPCODE 1NNN : Jump to address NNN
   case (0x1000): {
     prog_counter = last_three_nibbles(opcode);
+
+    if constexpr (debug) {
+      instruction = fmt::format("JMP {0:#x}", prog_counter);
+    }
     break;
   }
   // OPCODE BNNN : Jump to address NNN + V0
   case (0xB000): {
     prog_counter =
         static_cast<uint16_t>(last_three_nibbles(opcode) + V[0]) & 0x0FFF;
-    ;
+
+    if constexpr (debug) {
+      instruction = fmt::format("JMP {0:#x}, {1:#x}", V[0], prog_counter);
+    }
     break;
   }
   // OPCODE 2NNN : Execute subroutine starting at address NNN
   case (0x2000): {
     hw_stack.push(prog_counter);
     prog_counter = last_three_nibbles(opcode) & 0x0FFF;
+
+    if constexpr (debug) {
+      instruction = fmt::format("CALL {0:#x}", prog_counter);
+    }
     break;
   }
   case (0x0000): {
@@ -256,11 +318,19 @@ void chip8::step_one_cycle() {
     if (last_two_nibbles(opcode) == 0xEE) {
       prog_counter = hw_stack.top();
       hw_stack.pop();
-    } 
+
+      if constexpr (debug) {
+        instruction = fmt::format("RET");
+      }
+    }
     // OPCODE 00E0 : Clear display
     else if (last_two_nibbles(opcode) == 0xE0) {
       display = {0};
       isDisplaySet = true;
+
+      if constexpr (debug) {
+        instruction = fmt::format("CLS");
+      }
     } else {
       fmt::print("Unrecognized opcode: {0:#x} \n", opcode);
     }
@@ -274,6 +344,10 @@ void chip8::step_one_cycle() {
     if (V[Vx] == cmp_value) {
       prog_counter = static_cast<uint16_t>(prog_counter + 2) & 0x0FFF;
     }
+
+    if constexpr (debug) {
+      instruction = fmt::format("SE {0:#x}, {1:#x}", Vx, cmp_value);
+    }
     break;
   }
   // OPCODE 4XNN : Skip the following instruction
@@ -284,6 +358,10 @@ void chip8::step_one_cycle() {
     if (V[Vx] != cmp_value) {
       prog_counter = static_cast<uint16_t>(prog_counter + 2) & 0x0FFF;
     }
+
+    if constexpr (debug) {
+      instruction = fmt::format("SNE {0:#x}, {1:#x}", Vx, cmp_value);
+    }
     break;
   }
   // OPCODE 5XNN : Skip the following instruction if the value
@@ -292,6 +370,10 @@ void chip8::step_one_cycle() {
     const auto [Vx, Vy] = get_XY_nibbles(opcode);
     if (V[Vx] == V[Vy]) {
       prog_counter = static_cast<uint16_t>(prog_counter + 2) & 0x0FFF;
+    }
+
+    if constexpr (debug) {
+      instruction = fmt::format("SE {0:#x}, {1:#x}", Vx, Vy);
     }
     break;
   }
@@ -302,6 +384,10 @@ void chip8::step_one_cycle() {
     if (V[Vx] != V[Vy]) {
       prog_counter = static_cast<uint16_t>(prog_counter + 2) & 0x0FFF;
     }
+
+    if constexpr (debug) {
+      instruction = fmt::format("SNE {0:#x}, {1:#x}", Vx, Vy);
+    }
     break;
   }
   case (0xF000): {
@@ -309,40 +395,63 @@ void chip8::step_one_cycle() {
     if (last_two_nibbles(opcode) == 0x15) {
       const auto Vx = static_cast<uint8_t>(second_nibble(opcode) >> 8);
       delay_timer = V[Vx];
+
+      if constexpr (debug) {
+        instruction = fmt::format("LD {0:#x}, {1:#x}", delay_timer, Vx);
+      }
     }
     // OPCODE FX07: Store the current value of the delay timer in register VX
     else if (last_two_nibbles(opcode) == 0x07) {
       const auto Vx = static_cast<uint8_t>(second_nibble(opcode) >> 8);
       V[Vx] = delay_timer;
+
+      if constexpr (debug) {
+        instruction = fmt::format("LD {0:#x}, {1:#x}", Vx, delay_timer);
+      }
     }
     // OPCODE FX18: Set the sound timer to the value of register VX
     else if (last_two_nibbles(opcode) == 0x18) {
       const auto Vx = static_cast<uint8_t>(second_nibble(opcode) >> 8);
       sound_timer = V[Vx];
+
+      if constexpr (debug) {
+        instruction = fmt::format("LD {0:#x}, {1:#x}", sound_timer, Vx);
+      }
     }
     // OPCODE FX29: Set I to the memory address of the sprite data
     // corresponding to the hexadecimal digit stored in register VX
     else if (last_two_nibbles(opcode) == 0x29) {
-      I = static_cast<uint16_t>(5 * (second_nibble(opcode) >> 8));
+      const auto Vx = static_cast<uint8_t>(second_nibble(opcode) >> 8);
+      I = static_cast<uint16_t>(5 * Vx);
+
+      if constexpr (debug) {
+        instruction = fmt::format("LD {0:#x}, {1:#x}", I, Vx);
+      }
     }
     // OPCODE FX33: Store the binary-coded decimal equivalent of
     // the value stored in register VX at addresses I, I+1, and I+2
     else if (last_two_nibbles(opcode) == 0x33) {
       const auto Vx = static_cast<uint8_t>((second_nibble(opcode) >> 8));
-      auto [MSB, MidB, LSB] = parse_BCD(V[Vx]);
+      const auto [MSB, MidB, LSB] = parse_BCD(V[Vx]);
       memory[I] = MSB;
       memory[I + 1] = MidB;
       memory[I + 2] = LSB;
+
+      if constexpr (debug) {
+        instruction = fmt::format("LD {0:#x}, {1:#x}", V[Vx], Vx);
+      }
     }
     // OPCODE FX55: Store the values of registers V0 to VX
     // inclusive in memory starting at address I
     // I is set to I + X + 1 after operation
     else if (last_two_nibbles(opcode) == 0x55) {
       const auto Vx = static_cast<uint8_t>((second_nibble(opcode) >> 8));
-      for (size_t i = 0; i <= Vx; i++) {
-        memory[I + i] = V[i];
-      }
+      std::copy_n(V.begin(), (Vx + 1), (memory.begin() + I));
       I = static_cast<uint16_t>(I + Vx + 1);
+
+      if constexpr (debug) {
+        instruction = fmt::format("LD [{0:#x}], {1:#x}", I, Vx);
+      }
     }
     // OPCODE FX65: Fill registers V0 to VX
     // inclusive with the values stored in memory starting at address I
@@ -353,6 +462,10 @@ void chip8::step_one_cycle() {
         V[i] = memory[I + i];
       }
       I = static_cast<uint16_t>(I + Vx + 1);
+
+      if constexpr (debug) {
+        instruction = fmt::format("LD  {0:#x}, [{1:#x}]", Vx, I);
+      }
     }
     // OPCODE FX0A: Wait for a keypress and store the result in register VX
     else if (last_two_nibbles(opcode) == 0x0A) {
@@ -364,11 +477,19 @@ void chip8::step_one_cycle() {
         // reset the counter to repeat this opcode until key is pressed
         prog_counter = static_cast<uint16_t>(prog_counter - 2);
       }
+
+      if constexpr (debug) {
+        instruction = fmt::format("LDK {0:#x}, {1:#x}", Vx, V[Vx]);
+      }
     }
     // OPCODE FX1E: Add the value stored in register VX to register I
     else if (last_two_nibbles(opcode) == 0x1E) {
       const auto Vx = static_cast<uint8_t>(second_nibble(opcode) >> 8);
       I = static_cast<uint16_t>(I + V[Vx]);
+
+      if constexpr (debug) {
+        instruction = fmt::format("ADD {0:#x}, {1:#x}", I, Vx);
+      }
     } else {
       fmt::print("Unrecognized opcode: {0:#x} \n", opcode);
     }
@@ -377,6 +498,10 @@ void chip8::step_one_cycle() {
   // OPCODE ANNN: Store memory address NNN in register I
   case (0xA000): {
     I = last_three_nibbles(opcode);
+
+    if constexpr (debug) {
+      instruction = fmt::format("LD I, {0:#x}", I);
+    }
     break;
   }
   // OPCODE DXYN: Draw a sprite at position VX, VY with N bytes
@@ -404,6 +529,10 @@ void chip8::step_one_cycle() {
       }
     }
     isDisplaySet = true;
+
+    if constexpr (debug) {
+      instruction = fmt::format("DRW {0:#x}, {1:#x}, {2:#x}", Vx, Vy, N);
+    }
     break;
   }
   case (0xE000): {
@@ -414,6 +543,10 @@ void chip8::step_one_cycle() {
       if (numpad->isKeyVxPressed(V[Vx])) {
         prog_counter = static_cast<uint16_t>(prog_counter + 2);
       }
+
+      if constexpr (debug) {
+        instruction = fmt::format("SKP {0:#x}", Vx);
+      }
     }
     // OPCODE EXA1: Skip the following instruction if the key corresponding
     // to the hex value currently stored in register VX is not pressed
@@ -421,6 +554,10 @@ void chip8::step_one_cycle() {
       const auto Vx = static_cast<uint8_t>(second_nibble(opcode) >> 8);
       if (!numpad->isKeyVxPressed(V[Vx])) {
         prog_counter = static_cast<uint16_t>(prog_counter + 2);
+      }
+
+      if constexpr (debug) {
+        instruction = fmt::format("SKNP {0:#x}", Vx);
       }
     } else {
       fmt::print("Unrecognized opcode: {0:#x} \n", opcode);
