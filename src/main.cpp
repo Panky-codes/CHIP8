@@ -11,6 +11,7 @@
 #include <SFML/System/Clock.hpp>
 #include <SFML/Window/Event.hpp>
 #include <argparse/argparse.hpp>
+#include <boost/circular_buffer.hpp>
 #include <fmt/format.h>
 #include <imgui-SFML.h>
 #include <imgui.h>
@@ -85,17 +86,19 @@ int main(int argc, char *argv[]) {
   sf::Texture texture;
   sf::Sprite chip8_sprite;
   sf::Clock deltaClock;
+  boost::circular_buffer<std::string> instr_cb(10);
   int slider_input = 10;
   bool fall_through = false;
 
   chip8_sprite.setScale(scaleFactor, scaleFactor);
   chip8_sprite.setPosition(float(window.getSize().x / 2) - (32 * scaleFactor),
                            float(window.getSize().y / 2) - (16 * scaleFactor));
-  CHIP8_window.create(64.F, 32.F, sf::Color::Black);
+  CHIP8_window.create(display_x, display_y, sf::Color::Black);
 
   while (window.isOpen()) {
 
     sf::Event event;
+    bool shouldExecuteCycle = true;
     while (window.pollEvent(event)) {
       ImGui::SFML::ProcessEvent(event);
 
@@ -106,67 +109,83 @@ int main(int argc, char *argv[]) {
 
     ImGui::SFML::Update(window, deltaClock.restart());
 
-    ImGui::Begin("Internal Register");
-    ImGui::SetWindowPos(ImVec2(5, 5), ImGuiCond_Once);
-    ImGui::BeginChild("Scrolling", ImVec2(300, 600));
-    auto V_regiters = emulator.get_V_registers();
-    auto index = 0;
-    ImGui::TextColored(ImVec4(1, 0, 0, 1), "PC     : %d",
-                       emulator.get_prog_counter());
-    ImGui::Separator();
-    ImGui::TextColored(ImVec4(1, 0, 0, 1), "I      : %#x",
-                       emulator.get_I_register());
-    ImGui::Separator();
-    ImGui::TextColored(ImVec4(1, 0, 0, 1), "V register");
-    for (auto reg : V_regiters) {
-      ImGui::Text("V[0x%x] : %#x", index, reg);
-      ++index;
+    if constexpr (debug) {
+      ImGui::Begin("Internal Register");
+      ImGui::SetWindowPos(ImVec2(5, 5), ImGuiCond_Once);
+      ImGui::BeginChild("Scrolling", ImVec2(300, 600));
+      auto V_regiters = emulator.get_V_registers();
+      auto index = 0;
+      ImGui::TextColored(ImVec4(1, 0, 0, 1), "PC     : %d",
+                         emulator.get_prog_counter());
+      ImGui::Separator();
+      ImGui::TextColored(ImVec4(1, 0, 0, 1), "I      : %#x",
+                         emulator.get_I_register());
+      ImGui::Separator();
+      ImGui::TextColored(ImVec4(1, 0, 0, 1), "V register");
+      for (auto reg : V_regiters) {
+        ImGui::Text("V[0x%x] : %#x", index, reg);
+        ++index;
+      }
+      ImGui::Separator();
+      auto stack = emulator.get_stack();
+      auto index1 = stack.size();
+      ImGui::TextColored(ImVec4(1, 0, 0, 1), "Stack");
+      while (!stack.empty()) {
+        ImGui::Text("V[0x%x] : %#x", index, stack.top());
+        stack.pop();
+        --index1;
+      }
+      ImGui::EndChild();
+      ImGui::End();
     }
-    ImGui::Separator();
-    auto stack = emulator.get_stack();
-    auto index1 = stack.size();
-    ImGui::TextColored(ImVec4(1, 0, 0, 1), "Stack");
-    while (!stack.empty()) {
-      ImGui::Text("V[0x%x] : %#x", index, stack.top());
-      stack.pop();
-      --index1;
-    }
-    ImGui::EndChild();
-    ImGui::End();
-
     window.clear();
 
-    ImGui::Begin("CPU frequency");
-    ImGui::SetWindowPos(ImVec2(800, 5), ImGuiCond_Once);
-    ImGui::BeginChild("", ImVec2(300, 20));
-    ImGui::SliderInt("", &slider_input, 1, 20);
-    ImGui::EndChild();
-    ImGui::End();
+      ImGui::Begin("Adjust Speed");
+      ImGui::SetWindowPos(ImVec2(800, 5), ImGuiCond_Once);
+      ImGui::BeginChild("", ImVec2(300, 20));
+      ImGui::SliderInt("", &slider_input, 1, 20);
+      ImGui::EndChild();
+      ImGui::End();
 
-    bool step_next = false;
-    ImGui::Begin("Debugger");
-    if (ImGui::Button("Step Next")) {
-      step_next = true;
-    }
-    if (ImGui::Button("Continue")) {
-      fall_through = true;
-    }
-    if (ImGui::Button("Pause")) {
-      fall_through = false;
-    }
-    ImGui::End();
+    if constexpr (debug) {
+      bool step_next = false;
+      ImGui::Begin("Debugger");
+      ImGui::SetWindowPos(ImVec2(1200, 300), ImGuiCond_Once);
 
+      if (ImGui::Button("Step Next")) {
+        step_next = true;
+      }
+      if (ImGui::Button("Continue")) {
+        fall_through = true;
+      }
+      if (ImGui::Button("Pause")) {
+        fall_through = false;
+      }
+      shouldExecuteCycle = (step_next || fall_through);
+      ImGui::End();
+    }
     int cpu_freq = slider_input;
     while (cpu_freq--) {
-      if (fall_through || step_next) {
+      if (shouldExecuteCycle) {
         emulator.step_one_cycle();
-      }
-      if (emulator.get_display_flag()) {
-        gfx = emulator.get_display_pixels();
-        drawGfx(gfx, CHIP8_window);
+        instr_cb.push_front(emulator.get_instruction());
       }
     }
 
+    gfx = emulator.get_display_pixels();
+    drawGfx(gfx, CHIP8_window);
+
+    if constexpr (debug) {
+      ImGui::Begin("Instruction window");
+      ImGui::SetWindowFontScale(1.15F);
+      ImGui::SetWindowPos(ImVec2(800, 800), ImGuiCond_Once);
+      ImGui::BeginChild("Scrolling", ImVec2(300, 300));
+      for (const auto &instr : instr_cb) {
+        ImGui::Text("%s", instr.c_str());
+      }
+      ImGui::EndChild();
+      ImGui::End();
+    }
     texture.loadFromImage(CHIP8_window);
     chip8_sprite.setTexture(texture);
     window.draw(chip8_sprite);

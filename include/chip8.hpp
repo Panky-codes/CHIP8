@@ -13,7 +13,7 @@
 static constexpr auto display_x = 64;
 static constexpr auto display_y = 32;
 static constexpr auto display_size = display_x * display_y;
-static constexpr bool debug = true;
+static constexpr bool debug = false;
 
 class chip8 {
 public:

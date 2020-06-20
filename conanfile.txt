@@ -4,4 +4,5 @@ fmt/6.1.2
 imgui-sfml/2.1@bincrafters/stable
 trompeloeil/v36@rollbear/stable 
 argparse/2.1 
+boost/1.71.0
 
