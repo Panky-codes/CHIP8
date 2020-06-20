@@ -1,5 +1,6 @@
 // Own headers
 #include "chip8.hpp"
+#include "imgui_helper.hpp"
 
 // System headers
 #include <array>
@@ -76,27 +77,24 @@ int main(int argc, char *argv[]) {
 
   // SFML Graphics
   constexpr int scaleFactor = 4;
-
   sf::RenderWindow window(sf::VideoMode(640.f, 480.f),
                           "CHIP8 Emulator/Interpretter");
-  window.setFramerateLimit(60);
-  ImGui::SFML::Init(window);
-
+  boost::circular_buffer<std::string> instr_cb(10);
+  int slider_input = 10;
+  bool fall_through = false;
   sf::Image CHIP8_window;
   sf::Texture texture;
   sf::Sprite chip8_sprite;
   sf::Clock deltaClock;
-  boost::circular_buffer<std::string> instr_cb(10);
-  int slider_input = 10;
-  bool fall_through = false;
 
+  window.setFramerateLimit(60);
+  ImGui::SFML::Init(window);
   chip8_sprite.setScale(scaleFactor, scaleFactor);
   chip8_sprite.setPosition(float(window.getSize().x / 2) - (32 * scaleFactor),
                            float(window.getSize().y / 2) - (16 * scaleFactor));
   CHIP8_window.create(display_x, display_y, sf::Color::Black);
 
   while (window.isOpen()) {
-
     sf::Event event;
     bool shouldExecuteCycle = true;
     while (window.pollEvent(event)) {
@@ -106,64 +104,24 @@ int main(int argc, char *argv[]) {
         window.close();
       }
     }
-
     ImGui::SFML::Update(window, deltaClock.restart());
 
-    if constexpr (debug) {
-      ImGui::Begin("Internal Register");
-      ImGui::SetWindowPos(ImVec2(5, 5), ImGuiCond_Once);
-      ImGui::BeginChild("Scrolling", ImVec2(300, 600));
-      auto V_regiters = emulator.get_V_registers();
-      auto index = 0;
-      ImGui::TextColored(ImVec4(1, 0, 0, 1), "PC     : %d",
-                         emulator.get_prog_counter());
-      ImGui::Separator();
-      ImGui::TextColored(ImVec4(1, 0, 0, 1), "I      : %#x",
-                         emulator.get_I_register());
-      ImGui::Separator();
-      ImGui::TextColored(ImVec4(1, 0, 0, 1), "V register");
-      for (auto reg : V_regiters) {
-        ImGui::Text("V[0x%x] : %#x", index, reg);
-        ++index;
-      }
-      ImGui::Separator();
-      auto stack = emulator.get_stack();
-      auto index1 = stack.size();
-      ImGui::TextColored(ImVec4(1, 0, 0, 1), "Stack");
-      while (!stack.empty()) {
-        ImGui::Text("V[0x%x] : %#x", index, stack.top());
-        stack.pop();
-        --index1;
-      }
-      ImGui::EndChild();
-      ImGui::End();
-    }
     window.clear();
 
-      ImGui::Begin("Adjust Speed");
-      ImGui::SetWindowPos(ImVec2(800, 5), ImGuiCond_Once);
-      ImGui::BeginChild("", ImVec2(300, 20));
-      ImGui::SliderInt("", &slider_input, 1, 20);
-      ImGui::EndChild();
-      ImGui::End();
+    if constexpr (debug) {
+      using ch8_regs = IMGUI::chip8_registers;
+      IMGUI::draw_registers_window(
+          ch8_regs{emulator.get_V_registers(), emulator.get_stack(),
+                   emulator.get_prog_counter(), emulator.get_I_register()});
+    }
+
+    IMGUI::draw_slider_window(slider_input);
 
     if constexpr (debug) {
-      bool step_next = false;
-      ImGui::Begin("Debugger");
-      ImGui::SetWindowPos(ImVec2(1200, 300), ImGuiCond_Once);
-
-      if (ImGui::Button("Step Next")) {
-        step_next = true;
-      }
-      if (ImGui::Button("Continue")) {
-        fall_through = true;
-      }
-      if (ImGui::Button("Pause")) {
-        fall_through = false;
-      }
-      shouldExecuteCycle = (step_next || fall_through);
-      ImGui::End();
+      // mutates fall_through option based on input
+      shouldExecuteCycle = IMGUI::draw_debugger_options(fall_through);
     }
+
     int cpu_freq = slider_input;
     while (cpu_freq--) {
       if (shouldExecuteCycle) {
@@ -176,16 +134,9 @@ int main(int argc, char *argv[]) {
     drawGfx(gfx, CHIP8_window);
 
     if constexpr (debug) {
-      ImGui::Begin("Instruction window");
-      ImGui::SetWindowFontScale(1.15F);
-      ImGui::SetWindowPos(ImVec2(800, 800), ImGuiCond_Once);
-      ImGui::BeginChild("Scrolling", ImVec2(300, 300));
-      for (const auto &instr : instr_cb) {
-        ImGui::Text("%s", instr.c_str());
-      }
-      ImGui::EndChild();
-      ImGui::End();
+      IMGUI::draw_instruction_window(instr_cb);
     }
+
     texture.loadFromImage(CHIP8_window);
     chip8_sprite.setTexture(texture);
     window.draw(chip8_sprite);
