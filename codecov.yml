@@ -23,6 +23,8 @@ ignore:
   -  "tests/*"
   -  "src/main.cpp"
   -  "src/keyboard.cpp"
+  -  "include/imgui_helper.hpp"
+  -  "include/keyboard.hpp"
 
 comment:
   layout: "reach,diff,flags,tree"

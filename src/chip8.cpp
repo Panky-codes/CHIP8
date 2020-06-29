@@ -1,5 +1,6 @@
 #include "chip8.hpp"
 #include <algorithm>
+#include <fstream>
 #include <random>
 
 #include "fmt/format.h"
@@ -93,9 +94,22 @@ void chip8::load_memory(const std::vector<uint8_t> &rom_opcodes) {
               memory.begin() + prog_mem_begin);
 }
 
-void chip8::load_memory(const std::vector<char> &rom_opcodes) {
-  std::copy_n(rom_opcodes.begin(), rom_opcodes.size(),
-              memory.begin() + prog_mem_begin);
+void chip8::load_memory(const std::string &file_name) {
+  std::ifstream file;
+  std::vector<char> rom;
+  file.open(file_name.c_str(), std::ios::binary | std::ios::ate);
+
+  if (file.is_open()) {
+    std::streampos size = file.tellg();
+    rom.resize(static_cast<std::size_t>(size));
+    file.seekg(0, std::ios::beg);
+    file.read(rom.data(), size);
+    file.close();
+  } else {
+    throw std::invalid_argument("Given filename " + file_name +
+                                " does not exist!");
+  }
+  std::copy_n(rom.begin(), rom.size(), memory.begin() + prog_mem_begin);
 }
 
 std::array<uint8_t, 16> chip8::get_V_registers() const { return V; }

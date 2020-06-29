@@ -4,7 +4,6 @@
 
 // System headers
 #include <array>
-#include <fstream>
 #include <vector>
 
 // Third-party headers
@@ -22,23 +21,6 @@ static const sf::Color bgPixel{0, 0, 0, 255}; // Background pixels are black
 static const sf::Color spritePixel{0, 255, 0, 255}; // Sprite pixel is Green
 
 // Local function
-
-static void read_file(std::vector<char> &rom, const std::string &file_name) {
-  std::ifstream file;
-  file.open(file_name.c_str(), std::ios::binary | std::ios::ate);
-
-  if (file.is_open()) {
-    std::streampos size = file.tellg();
-    rom.resize(static_cast<std::size_t>(size));
-    file.seekg(0, std::ios::beg);
-    file.read(rom.data(), size);
-    file.close();
-  } else {
-    throw std::invalid_argument("Given filename " + file_name +
-                                " does not exist!");
-  }
-}
-
 static void drawGfx(const std::array<uint8_t, display_size> &gfx,
                     sf::Image &window) {
   for (uint y = 0; y < display_y; ++y) {
@@ -64,15 +46,14 @@ int main(int argc, char *argv[]) {
   auto file_name = program.get<std::string>("ROM");
 
   // Emulator setup and load rom
-  std::vector<char> rom;
   chip8 emulator;
   try {
-    read_file(rom, file_name);
+    emulator.load_memory(file_name);
+    // read_file(rom, file_name);
   } catch (std::exception &e) {
     std::cout << e.what() << std::endl;
     std::abort();
   }
-  emulator.load_memory(rom);
 
   // SFML Graphics
   constexpr int scaleFactor = 4;
