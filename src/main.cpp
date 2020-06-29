@@ -66,7 +66,6 @@ int main(int argc, char *argv[]) {
   // Emulator setup and load rom
   std::vector<char> rom;
   chip8 emulator;
-  std::array<uint8_t, display_size> gfx{0};
   try {
     read_file(rom, file_name);
   } catch (std::exception &e) {
@@ -94,6 +93,7 @@ int main(int argc, char *argv[]) {
                            float(window.getSize().y / 2) - (16 * scaleFactor));
   CHIP8_window.create(display_x, display_y, sf::Color::Black);
 
+  // Main emulator loop
   while (window.isOpen()) {
     sf::Event event;
     bool shouldExecuteCycle = true;
@@ -130,7 +130,7 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    gfx = emulator.get_display_pixels();
+    const auto gfx = emulator.get_display_pixels();
     drawGfx(gfx, CHIP8_window);
 
     if constexpr (debug) {

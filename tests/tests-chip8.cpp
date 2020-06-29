@@ -516,9 +516,10 @@ TEST_CASE("Opcodes for Graphics") {
   }
   SECTION("FX29 LDA I with hex font address") {
     // LDA font for F
-    std::vector<uint8_t> rom{0x61, 0x05, 0x62, 0x05, 0xFD, 0x29, 0xD1, 0x11};
+    std::vector<uint8_t> rom{0x61, 0x05, 0x62, 0x05, 0x6D, 0x0F, 0xFD, 0x29, 0xD1, 0x11};
 
     emulator.load_memory(rom);
+    emulator.step_one_cycle();
     emulator.step_one_cycle();
     emulator.step_one_cycle();
     emulator.step_one_cycle();
@@ -527,7 +528,7 @@ TEST_CASE("Opcodes for Graphics") {
 
     for (size_t i = 0; i < 8; i++) {
       REQUIRE(disp.at(5 + (display_x * 5) + i) ==
-              ((0xE0 & (0x80 >> i)) > 0 ? 1 : 0));
+              ((0xF0 & (0x80 >> i)) > 0 ? 1 : 0));
     }
   }
 }

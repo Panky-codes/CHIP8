@@ -136,7 +136,7 @@ void chip8::step_one_cycle() {
     const auto Vx = static_cast<uint8_t>(second_nibble(opcode) >> 8);
     V[Vx] = last_two_nibbles(opcode);
     if constexpr (debug) {
-      instruction = fmt::format("LD {0:#x}, {1:#x}", Vx, V[Vx]);
+      instruction = fmt::format("6XNN: LD {0:#x}, {1:#x}", Vx, V[Vx]);
     }
     break;
   }
@@ -147,7 +147,7 @@ void chip8::step_one_cycle() {
       V[Vx] = V[Vy];
 
       if constexpr (debug) {
-        instruction = fmt::format("LD {0:#x}, {1:#x}", Vx, Vy);
+        instruction = fmt::format("8XY0: LD {0:#x}, {1:#x}", Vx, Vy);
       }
     }
     // OPCODE 8XY4 : Add the value of register VY to register VX
@@ -160,7 +160,7 @@ void chip8::step_one_cycle() {
       V[Vx] = static_cast<uint8_t>(sum);
 
       if constexpr (debug) {
-        instruction = fmt::format("ADD {0:#x}, {1:#x}", Vx, Vy);
+        instruction = fmt::format("8XY4: ADD {0:#x}, {1:#x}", Vx, Vy);
       }
     }
     // OPCODE 8XY5 : Subtract the value of register VY from register VX
@@ -175,7 +175,7 @@ void chip8::step_one_cycle() {
       V[Vx] = static_cast<uint8_t>(V[Vx] - V[Vy]);
 
       if constexpr (debug) {
-        instruction = fmt::format("SUB {0:#x}, {1:#x}", Vx, Vy);
+        instruction = fmt::format("8XY5: SUB {0:#x}, {1:#x}", Vx, Vy);
       }
     }
     // OPCODE 8XY7 : Set register VX to the value of VY minus VX
@@ -190,7 +190,7 @@ void chip8::step_one_cycle() {
       V[Vx] = static_cast<uint8_t>(V[Vy] - V[Vx]);
 
       if constexpr (debug) {
-        instruction = fmt::format("SUBN {0:#x}, {1:#x}", Vx, Vy);
+        instruction = fmt::format("8XY7: SUBN {0:#x}, {1:#x}", Vx, Vy);
       }
     }
     // OPCODE 8XY2 : Set VX to VX AND VY
@@ -199,7 +199,7 @@ void chip8::step_one_cycle() {
       V[Vx] = V[Vx] & V[Vy];
 
       if constexpr (debug) {
-        instruction = fmt::format("AND {0:#x}, {1:#x}", Vx, Vy);
+        instruction = fmt::format("8XY2: AND {0:#x}, {1:#x}", Vx, Vy);
       }
     }
     // OPCODE 8XY1 : Set VX to VX OR VY
@@ -208,7 +208,7 @@ void chip8::step_one_cycle() {
       V[Vx] = V[Vx] | V[Vy];
 
       if constexpr (debug) {
-        instruction = fmt::format("OR {0:#x}, {1:#x}", Vx, Vy);
+        instruction = fmt::format("8XY1: OR {0:#x}, {1:#x}", Vx, Vy);
       }
     }
     // OPCODE 8XY3 : Set VX to VX XOR VY
@@ -217,7 +217,7 @@ void chip8::step_one_cycle() {
       V[Vx] = V[Vx] ^ V[Vy];
 
       if constexpr (debug) {
-        instruction = fmt::format("XOR {0:#x}, {1:#x}", Vx, Vy);
+        instruction = fmt::format("8XY3: XOR {0:#x}, {1:#x}", Vx, Vy);
       }
     }
     // OPCODE 8XY6 : Store the value of register VY
@@ -232,7 +232,7 @@ void chip8::step_one_cycle() {
       V[Vx] = V[Vy];
 
       if constexpr (debug) {
-        instruction = fmt::format("SHR {0:#x}, {{,{1:#x}}}", Vx, Vy);
+        instruction = fmt::format("8XY6: SHR {0:#x}, {{,{1:#x}}}", Vx, Vy);
       }
     }
     // OPCODE 8XYE : Store the value of register VY
@@ -247,10 +247,9 @@ void chip8::step_one_cycle() {
       V[Vx] = V[Vy];
 
       if constexpr (debug) {
-        instruction = fmt::format("SHL {0:#x}, {{,{1:#x}}}", Vx, Vy);
+        instruction = fmt::format("8XYE: SHL {0:#x}, {{,{1:#x}}}", Vx, Vy);
       }
     } else {
-      // TODO: Probably error handling? Thrown an exception ?
       fmt::print("Unrecognized opcode: {0:#x} \n", opcode);
     }
     break;
@@ -265,7 +264,7 @@ void chip8::step_one_cycle() {
     V[Vx] = static_cast<uint8_t>((last_two_nibbles(opcode) + NN));
 
     if constexpr (debug) {
-      instruction = fmt::format("ADD {0:#x}, {1:#x}", Vx, NN);
+      instruction = fmt::format("7XNN: ADD {0:#x}, {1:#x}", Vx, NN);
     }
     break;
   }
@@ -280,7 +279,7 @@ void chip8::step_one_cycle() {
     V[Vx] = static_cast<uint8_t>(idist(rgen) & mask);
 
     if constexpr (debug) {
-      instruction = fmt::format("RND {0:#x}, {1:#x}", Vx, V[Vx]);
+      instruction = fmt::format("CXNN: RND {0:#x}, {1:#x}", Vx, V[Vx]);
     }
     break;
   }
@@ -289,7 +288,7 @@ void chip8::step_one_cycle() {
     prog_counter = last_three_nibbles(opcode);
 
     if constexpr (debug) {
-      instruction = fmt::format("JMP {0:#x}", prog_counter);
+      instruction = fmt::format("1NNN: JMP {0:#x}", prog_counter);
     }
     break;
   }
@@ -299,7 +298,7 @@ void chip8::step_one_cycle() {
         static_cast<uint16_t>(last_three_nibbles(opcode) + V[0]) & 0x0FFF;
 
     if constexpr (debug) {
-      instruction = fmt::format("JMP {0:#x}, {1:#x}", V[0], prog_counter);
+      instruction = fmt::format("BNNN: JMP {0:#x}, {1:#x}", V[0], prog_counter);
     }
     break;
   }
@@ -309,7 +308,7 @@ void chip8::step_one_cycle() {
     prog_counter = last_three_nibbles(opcode) & 0x0FFF;
 
     if constexpr (debug) {
-      instruction = fmt::format("CALL {0:#x}", prog_counter);
+      instruction = fmt::format("2NNN: CALL {0:#x}", prog_counter);
     }
     break;
   }
@@ -320,7 +319,7 @@ void chip8::step_one_cycle() {
       hw_stack.pop();
 
       if constexpr (debug) {
-        instruction = fmt::format("RET");
+        instruction = fmt::format("00EE: RET");
       }
     }
     // OPCODE 00E0 : Clear display
@@ -329,7 +328,7 @@ void chip8::step_one_cycle() {
       isDisplaySet = true;
 
       if constexpr (debug) {
-        instruction = fmt::format("CLS");
+        instruction = fmt::format("00E0: CLS");
       }
     } else {
       fmt::print("Unrecognized opcode: {0:#x} \n", opcode);
@@ -346,7 +345,7 @@ void chip8::step_one_cycle() {
     }
 
     if constexpr (debug) {
-      instruction = fmt::format("SE {0:#x}, {1:#x}", Vx, cmp_value);
+      instruction = fmt::format("3XNN: SE {0:#x}, {1:#x}", Vx, cmp_value);
     }
     break;
   }
@@ -360,7 +359,7 @@ void chip8::step_one_cycle() {
     }
 
     if constexpr (debug) {
-      instruction = fmt::format("SNE {0:#x}, {1:#x}", Vx, cmp_value);
+      instruction = fmt::format("4XNN: SNE {0:#x}, {1:#x}", Vx, cmp_value);
     }
     break;
   }
@@ -373,7 +372,7 @@ void chip8::step_one_cycle() {
     }
 
     if constexpr (debug) {
-      instruction = fmt::format("SE {0:#x}, {1:#x}", Vx, Vy);
+      instruction = fmt::format("5XNN: SE {0:#x}, {1:#x}", Vx, Vy);
     }
     break;
   }
@@ -386,7 +385,7 @@ void chip8::step_one_cycle() {
     }
 
     if constexpr (debug) {
-      instruction = fmt::format("SNE {0:#x}, {1:#x}", Vx, Vy);
+      instruction = fmt::format("9XNN: SNE {0:#x}, {1:#x}", Vx, Vy);
     }
     break;
   }
@@ -397,7 +396,7 @@ void chip8::step_one_cycle() {
       delay_timer = V[Vx];
 
       if constexpr (debug) {
-        instruction = fmt::format("LD {0:#x}, {1:#x}", delay_timer, Vx);
+        instruction = fmt::format("FX15: LD {0:#x}, {1:#x}", delay_timer, Vx);
       }
     }
     // OPCODE FX07: Store the current value of the delay timer in register VX
@@ -406,7 +405,7 @@ void chip8::step_one_cycle() {
       V[Vx] = delay_timer;
 
       if constexpr (debug) {
-        instruction = fmt::format("LD {0:#x}, {1:#x}", Vx, delay_timer);
+        instruction = fmt::format("FX07: LD {0:#x}, {1:#x}", Vx, delay_timer);
       }
     }
     // OPCODE FX18: Set the sound timer to the value of register VX
@@ -415,17 +414,17 @@ void chip8::step_one_cycle() {
       sound_timer = V[Vx];
 
       if constexpr (debug) {
-        instruction = fmt::format("LD {0:#x}, {1:#x}", sound_timer, Vx);
+        instruction = fmt::format("FX18: LD {0:#x}, {1:#x}", sound_timer, Vx);
       }
     }
     // OPCODE FX29: Set I to the memory address of the sprite data
     // corresponding to the hexadecimal digit stored in register VX
     else if (last_two_nibbles(opcode) == 0x29) {
       const auto Vx = static_cast<uint8_t>(second_nibble(opcode) >> 8);
-      I = static_cast<uint16_t>(5 * Vx);
+      I = static_cast<uint16_t>(5 * V[Vx]);
 
       if constexpr (debug) {
-        instruction = fmt::format("LD {0:#x}, {1:#x}", I, Vx);
+        instruction = fmt::format("FX29: LD {0:#x}, {1:#x}", I, Vx);
       }
     }
     // OPCODE FX33: Store the binary-coded decimal equivalent of
@@ -438,7 +437,7 @@ void chip8::step_one_cycle() {
       memory[I + 2] = LSB;
 
       if constexpr (debug) {
-        instruction = fmt::format("LD {0:#x}, {1:#x}", V[Vx], Vx);
+        instruction = fmt::format("FX33: LD {0:#x}, {1:#x}", V[Vx], Vx);
       }
     }
     // OPCODE FX55: Store the values of registers V0 to VX
@@ -450,7 +449,7 @@ void chip8::step_one_cycle() {
       I = static_cast<uint16_t>(I + Vx + 1);
 
       if constexpr (debug) {
-        instruction = fmt::format("LD [{0:#x}], {1:#x}", I, Vx);
+        instruction = fmt::format("FX55: LD [{0:#x}], {1:#x}", I, Vx);
       }
     }
     // OPCODE FX65: Fill registers V0 to VX
@@ -464,7 +463,7 @@ void chip8::step_one_cycle() {
       I = static_cast<uint16_t>(I + Vx + 1);
 
       if constexpr (debug) {
-        instruction = fmt::format("LD  {0:#x}, [{1:#x}]", Vx, I);
+        instruction = fmt::format("FX65: LD  {0:#x}, [{1:#x}]", Vx, I);
       }
     }
     // OPCODE FX0A: Wait for a keypress and store the result in register VX
@@ -479,7 +478,7 @@ void chip8::step_one_cycle() {
       }
 
       if constexpr (debug) {
-        instruction = fmt::format("LDK {0:#x}, {1:#x}", Vx, V[Vx]);
+        instruction = fmt::format("FX0A: LDK {0:#x}, {1:#x}", Vx, V[Vx]);
       }
     }
     // OPCODE FX1E: Add the value stored in register VX to register I
@@ -488,7 +487,7 @@ void chip8::step_one_cycle() {
       I = static_cast<uint16_t>(I + V[Vx]);
 
       if constexpr (debug) {
-        instruction = fmt::format("ADD {0:#x}, {1:#x}", I, Vx);
+        instruction = fmt::format("FX1E: ADD {0:#x}, {1:#x}", I, Vx);
       }
     } else {
       fmt::print("Unrecognized opcode: {0:#x} \n", opcode);
@@ -500,7 +499,7 @@ void chip8::step_one_cycle() {
     I = last_three_nibbles(opcode);
 
     if constexpr (debug) {
-      instruction = fmt::format("LD I, {0:#x}", I);
+      instruction = fmt::format("ANNN: LD I, {0:#x}", I);
     }
     break;
   }
@@ -531,7 +530,7 @@ void chip8::step_one_cycle() {
     isDisplaySet = true;
 
     if constexpr (debug) {
-      instruction = fmt::format("DRW {0:#x}, {1:#x}, {2:#x}", Vx, Vy, N);
+      instruction = fmt::format("DXYN: DRW {0:#x}, {1:#x}, {2:#x}", Vx, Vy, N);
     }
     break;
   }
@@ -545,7 +544,7 @@ void chip8::step_one_cycle() {
       }
 
       if constexpr (debug) {
-        instruction = fmt::format("SKP {0:#x}", Vx);
+        instruction = fmt::format("EX9E: SKP {0:#x}", Vx);
       }
     }
     // OPCODE EXA1: Skip the following instruction if the key corresponding
@@ -557,7 +556,7 @@ void chip8::step_one_cycle() {
       }
 
       if constexpr (debug) {
-        instruction = fmt::format("SKNP {0:#x}", Vx);
+        instruction = fmt::format("EXA1: SKNP {0:#x}", Vx);
       }
     } else {
       fmt::print("Unrecognized opcode: {0:#x} \n", opcode);
