@@ -7,7 +7,7 @@ CHIP-8 is an interpreted programming language, developed by Joseph Weisbecker. I
 I recently got interested in emulation programming as I was always fascniated with the inner workings of a computer. The CHIP8 "emulator" is like the `Hello World!` program in writing emulators. I put double quotes around the word "emulator" because CHIP8 is an interpreted language but not actually a hardware by itself. Still, it is a worthwhile pursuit due to the similarities between the CHIP8 language and a system emulator. If you see the language, you can notice it resembles a lot like a assembly language.
 
 ## Status
-This project is still WIP. As a first step, I tested my implementation of OPCODES with the test ROM from [here](https://github.com/corax89/chip8-test-rom). The results looks promising as shown below:
+I tested my implementation of OPCODES with the test ROM from [here](https://github.com/corax89/chip8-test-rom). The results looks promising as shown below:
 ![test_rom](docs/test_rom.png)<br />
 
 ### Update1 
@@ -18,4 +18,3 @@ Emulator running PONG game with the debugger
 - [x] Use Mocks for SFML to unit test keyboard inputs
 - [x] Make travis CI work with the unit tests
 - [x] Create a debugger using IMGUI
-- [ ] With SFML, enable sound for sound timer
